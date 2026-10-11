@@ -95,18 +95,3 @@ docker compose down
 - `InquiryCreatedEvent` → топик `to2rent-inquiries`
 
 Фоновый `KafkaBookingAuditConsumer` слушает топики и обрабатывает события аудита в реальном времени.
-
----
-
-## 🐙 Публикация в Git / GitHub
-
-Локальный Git-репозиторий уже инициализирован, и сделан первый коммит в ветку `main`.
-
-Чтобы отправить проект в ваш репозиторий на GitHub:
-1. Создайте новый пустой репозиторий на [GitHub](https://github.com/new) (например, `to2rent-real-estate`).
-2. Выполните команды в терминале:
-   ```bash
-   git remote add origin https://github.com/NikitanGrand/ВАШ_РЕПОЗИТОРИЙ.git
-   git push -u origin main
-   ```
-   *(или с использованием SSH: `git remote add origin git@github.com:NikitanGrand/ВАШ_РЕПОЗИТОРИЙ.git`)*
