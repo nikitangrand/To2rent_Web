@@ -1,0 +1,128 @@
+.main_reviews {
+  width: 100%;
+  margin: 0 auto;
+  padding: 10px 20px;
+  background-color: #000000;
+}
+.main_reviews h1 {
+  color: #FFFFFF;
+  text-align: center;
+  font-size: 40px;
+}
+
+.reviews-section {
+  margin: 60px 0;
+}
+
+.brand-quote {
+  font-style: italic;
+  color: #FFFFFF;
+  font-size: 1.2rem;
+  padding-left: 24px;
+  border-left: 3px solid #C4C4C4;
+  margin: 30px 0;
+}
+
+.com-text {
+  text-align: left;
+  color: #333333;
+}
+
+.reviews-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+}
+
+.review-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 25px;
+}
+
+.review {
+  background-color: #C4C4C4;
+  border-left: 5px solid #888888;
+  padding: 24px;
+  border-radius: 8px;
+}
+
+.stars {
+  color: #c18c1c;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.author {
+  font-weight: bold;
+  color: #333333;
+}
+
+.date {
+  color: #888;
+  font-size: 15px;
+}
+
+.review-form {
+  background: #C4C4C4;
+  padding: 30px;
+  border-radius: 8px;
+}
+.review-form h2 {
+  color: #333333;
+  text-align: center;
+  font-size: 40px;
+  margin-bottom: 20px;
+}
+.review-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333333;
+}
+.review-form input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  border: 1px solid #C4C4C4;
+  border-radius: 4px;
+  font-family: inherit;
+}
+.review-form textarea {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  border: 1px solid #C4C4C4;
+  border-radius: 4px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.submit-btn {
+  background: #888888;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.submit-btn:hover {
+  background: #000000;
+  color: #FFFFFF;
+}
+
+@media (min-width: 768px) {
+  .reviews-container {
+    grid-template-columns: 2fr 1fr;
+  }
+}/*# sourceMappingURL=styles_comments.css.map */

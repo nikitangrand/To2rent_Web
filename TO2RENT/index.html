@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Домашняя страница</title>
+    <link rel="stylesheet" href="Css/styles.css">
+    <link rel="stylesheet" href="Css/interactive.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <a href="index.html" class="logo-link">
+            <img src="Images/Logo.svg" alt="To Rent - Аренда недвижимости" class="logo">
+        </a>
+        <nav class="main-nav">
+            <a href="Html-Pages/about.html" class="nav-link">О нас</a>
+            <a href="Html-Pages/apartments.html" class="nav-link">Квартиры</a>
+            <a href="Html-Pages/houses.html" class="nav-link">Дома</a>
+            <a href="#contacts" class="nav-link">Контакты</a>
+        </nav>
+    </header>
+    <main class="main-content">
+        <section class="hero">
+            <button class="slider-arrow slider-arrow--left" aria-label="Предыдущее изображение">
+                <img src="Images/ArrLeft.svg" alt="">
+            </button>
+            <img src="Images/Terr1.jpg" alt="Аренда элитной недвижимости" class="hero-image" id="mainImage">
+            <button class="slider-arrow slider-arrow--right" aria-label="Следующее изображение">
+                <img src="Images/ArrRight.svg" alt="">
+            </button>
+        </section>
+        <section class="search-section">
+            <p class="section-title">Поиск Апартаментов</p>
+            <div class="search-form">
+                <input type="text" placeholder="Введите город" class="search-input">
+                <button class="search-btn">Найти</button>
+            </div>
+        </section>
+        <section class="popular-section">
+            <h2 class="section-title section-title--dark">Самые популярные варианты</h2>
+            <div class="properties-grid">
+                <div class="property-card">
+                    <div class="property-image-wrapper">
+                        <img src="Images/Ellipse_1.jpg" alt="Апартаменты в Москве" class="property-image">
+                    </div>
+                    <h3 class="property-title">Апартаменты Москва</h3>
+                    <a href="Html-Pages/about_home_mos.html" class="btn">Детали</a>
+                </div>
+
+                <div class="property-card">
+                    <div class="property-image-wrapper">
+                        <img src="Images/Ellipse_2.jpg" alt="Апартаменты в Киеве" class="property-image">
+                    </div>
+                    <h3 class="property-title">Апартаменты Минск</h3>
+                    <a href="Html-Pages/about_home_min.html" class="btn">Детали</a>
+                </div>
+
+                <div class="property-card">
+                    <div class="property-image-wrapper">
+                        <img src="Images/Ellipse_4.jpg" alt="Современный коттедж в Лос Анджелесе" class="property-image">
+                    </div>
+                    <h3 class="property-title">Коттедж Modern Лос Анджелес</h3>
+                    <a href="Html-Pages/about_house_los.html" class="btn">Детали</a>
+                </div>
+
+                <div class="property-card">
+                    <div class="property-image-wrapper">
+                        <img src="Images/Ellipse_3.jpg" alt="Семейный коттедж в Лондоне" class="property-image">
+                    </div>
+                    <h3 class="property-title">Коттедж Семейный Лондон</h3>
+                    <a href="Html-Pages/about_house_lon.html" class="btn">Детали</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="features-section">
+            <div class="feature">
+                <img src="Images/Clock.svg" alt="" class="feature-icon">
+                <div class="feature-content">
+                    <h3 class="feature-title">Мы экономим Ваше время и Ваши деньги</h3>
+                    <p class="feature-text">Вы можете легко подобрать себе самую лучшую недвижимость для аренды на нашем сайте по выгодной цене. Наши менеджеры с удовольствием помогут Вам и ответят на все вопросы.</p>
+                    <a href="Html-Pages/about.html" class="feature-link">
+                        <img src="Images/Arrow.svg" alt="">
+                        <span>Подробнее</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="feature">
+                <img src="Images/World.svg" alt="" class="feature-icon">
+                <div class="feature-content">
+                    <h3 class="feature-title">Арендуйте лучшую недвижимость в крупных городах</h3>
+                    <p class="feature-text">Вы можете легко подобрать себе самую лучшую недвижимость для аренды на нашем сайте по выгодной цене. Наши менеджеры с удовольствием помогут Вам и ответят на все вопросы.</p>
+                    <a href="Html-Pages/about.html" class="feature-link">
+                        <img src="Images/Arrow.svg" alt="">
+                        <span>Подробнее</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="highlight-property">
+            <img src="Images/Modern_house.jpg" alt="Коттедж Modern Лос Анджелес" class="highlight-image">
+            <div class="highlight-content">
+                <h2 class="highlight-title">Коттедж Modern Лос Анджелес</h2>
+                <button class="btn btn--highlight">Забронировать</button>
+            </div>
+        </section>
+
+        <section class="info-section">
+            <div class="managers-block" id="contacts">
+                <h2 class="block-title">Наши менеджеры</h2>
+                <div class="managers-flex">
+                    <div class="manager">
+                        <img src="Images/Maks1.jpg" alt="Макс" class="manager-photo">
+                        <p class="manager-info">Макс 30 лет Москва</p>
+                        <button class="btn btn--small">Связаться</button>
+                    </div>
+                    <div class="manager">
+                        <img src="Images/Anna2.jpg" alt="Анна" class="manager-photo">
+                        <p class="manager-info">Анна 28 лет Киев</p>
+                        <button class="btn btn--small">Связаться</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="blog-block">
+                <h2 class="block-title">Блог</h2>
+                <ul class="blog-list">
+                    <li class="blog-item"><a href="">Системы охраны и видеонаблюдения</a></li>
+                    <li class="blog-item"><a href="">Клубная недвижимость всегда в цене</a></li>
+                    <li class="blog-item"><a href="">Все плюсы от посуточной аренды квартир</a></li>
+                    <li class="blog-item"><a href="">Как выбрать жильё своей мечты в Киеве?</a></li>
+                    <li class="blog-item"><a href="">Топ 10 ВИП коттеджей Лос Анджелеса</a></li>
+                    <li class="blog-item"><a href="">Лучшие апартаменты с панорамным видом</a></li>
+                    <li class="blog-item"><a href="">Дома для аренды на год в Майами</a></li>
+                </ul>
+            </div>
+
+            <div class="reviews-block">
+                <h2 class="block-title">Отзывы</h2>
+                <img src="Images/Comments.jpg" alt="Фото отзыва" class="review-image">
+                <p class="review-text">Это лучший сервис по подбору апартаментов. Пользуюсь услугами To rent уже 5 лет. Всегда идеально и именно то, что мне нужно.</p>
+                <a href="Html-Pages/comments.html"><button class="btn btn--small">Еще отзывы</button></a>
+            </div>
+        </section>
+
+        <footer class="main-footer">
+            <nav class="footer-nav">
+                <ul class="footer-menu">
+                    <li><a href="Html-Pages/about.html">О нас</a></li>
+                    <li><a href="Html-Pages/apartments.html">Квартиры</a></li>
+                    <li><a href="Html-Pages/houses.html">Дома</a></li>
+                    <li><a href="Html-Pages/comments.html">Отзывы</a></li>
+                    <li><a href="#contacts">Контакты</a></li>
+                </ul>
+            </nav>
+
+            <div class="contact-form">
+                <p class="form-title">Связаться с нами</p>
+                <div class="form-group">
+                    <input type="text" placeholder="Задать вопрос" class="form-input">
+                    <button class="btn btn--contact">Отправить</button>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <footer class="copyright-footer">
+        <a href="index.html" class="logo-link">
+            <img src="Images/Logo.svg" alt="To Rent - Аренда недвижимости" class="logo">
+        </a>
+    </footer>
+
+    <script src="JS/api-client.js"></script>
+    <script src="JS/app-interactive.js"></script>
+    <script src="JS/script.js"></script>
+</body>
+</html>

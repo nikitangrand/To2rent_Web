@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<properties>
+    <apartment id="1">
+        <title>Апартаменты Лос Анджелес</title>
+        <image>../Images/Los_home.png</image>
+        <price currency="$">1200000</price>
+        <description>Современная квартира с новым ремонтом</description>
+        <detailLink>about_home_los.html</detailLink>
+        <rooms>8</rooms>
+        <area>150</area>
+    </apartment>
+    <apartment id="2">
+        <title>Апартаменты Лондон</title>
+        <image>../Images/London_home.jpg</image>
+        <price currency="$">1500000</price>
+        <description>Просторная квартира в центре Лондона</description>
+        <detailLink>about_home_lon.html</detailLink>
+        <rooms>6</rooms>
+        <area>85</area>
+    </apartment>
+    <apartment id="3">
+        <title>Апартаменты Москва</title>
+        <image>../Images/Moscow_home.jpeg</image>
+        <price currency="$">110000</price>
+        <description>Стандартная квартира в Биберево</description>
+        <detailLink>about_home_mos.html</detailLink>
+        <rooms>1</rooms>
+        <area>42</area>
+    </apartment>
+    <apartment id="4">
+        <title>Апартаменты Минск</title>
+        <image>../Images/Minsk_home.jpg</image>
+        <price currency="$">95000</price>
+        <description>Комфортная квартира на Уручье</description>
+        <detailLink>about_home_min.html</detailLink>
+        <rooms>2</rooms>
+        <area>48</area>
+    </apartment>
+</properties>

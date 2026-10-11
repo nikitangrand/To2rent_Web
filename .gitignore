@@ -1,0 +1,29 @@
+# .gitignore for .NET, Docker, and Web Project
+
+# Build & binary outputs
+**/bin/
+**/obj/
+*.dll
+*.pdb
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Visual Studio & IDEs
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отзывы - TO2RENT</title>
+    <link rel="stylesheet" href="../Css/styles.css">
+    <link rel="stylesheet" href="../Css/styles_comments.css">
+    <link rel="stylesheet" href="../Css/interactive.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <a href="../index.html" class="logo-link">
+            <img src="../Images/Logo.svg" alt="To Rent - Аренда недвижимости" class="logo">
+        </a>
+    </header>
+    
+    <nav class="main-nav">
+        <a href="about.html" class="nav-link">О нас</a>
+        <a href="apartments.html" class="nav-link">Квартиры</a>
+        <a href="houses.html" class="nav-link">Дома</a>
+        <a href="../index.html#contacts" class="nav-link">Контакты</a>
+    </nav>
+
+    <main class="main_reviews">
+        <section id="reviews" class="reviews-section">
+            <h1>Отзывы клиентов</h1>
+            <p class="brand-quote">«TO2RENT — это не просто агентство недвижимости, а команда, которая помогает найти дом мечты и сопровождает на каждом этапе.»</p>
+
+            <div class="reviews-container">
+                <ul class="review-list">
+                    <li class="review">
+                        <div class="stars">★★★★★</div>
+                        <div class="review-header">
+                            <span class="author">Анна Петрова</span>
+                            <span class="date">12 апреля 2025</span>
+                        </div>
+                        <p class="com-text">Огромное спасибо агентству TO2RENT за профессионализм и индивидуальный подход! Нашли для меня идеальную квартиру за неделю, все документы оформили быстро и без лишних хлопот.</p>
+                    </li>
+                    <li class="review">
+                        <div class="stars">★★★★★</div>
+                        <div class="review-header">
+                            <span class="author">Сергей Иванов</span>
+                            <span class="date">2 марта 2025</span>
+                        </div>
+                        <p class="com-text">TO2RENT помогли продать мою квартиру по отличной цене. Особенно понравилось, что агенты всегда были на связи и подробно объясняли все этапы сделки.</p>
+                    </li>
+                    <li class="review">
+                        <div class="stars">★★★★☆</div>
+                        <div class="review-header">
+                            <span class="author">Мария К.</span>
+                            <span class="date">25 февраля 2025</span>
+                        </div>
+                        <p class="com-text">Очень понравился сервис и дружелюбие команды. Немного задержались с подбором вариантов, но в итоге нашли отличный дом для всей семьи.</p>
+                    </li>
+                </ul>
+
+                <form class="review-form">
+                    <h2>Оставить отзыв</h2>
+                    <label for="name">Ваше имя</label>
+                    <input type="text" id="name" name="name" required>
+                    
+                    <label for="rating">Оценка (1-5)</label>
+                    <input type="number" id="rating" name="rating" min="1" max="5" required>
+                    
+                    <label for="comment">Текст отзыва</label>
+                    <textarea id="comment" name="comment" rows="4" required></textarea>
+                    
+                    <button type="submit" class="submit-btn">Отправить</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <nav class="footer-nav">
+            <ul class="footer-menu">
+                <li><a href="about.html">О нас</a></li>
+                <li><a href="apartments.html">Квартиры</a></li>
+                <li><a href="houses.html">Дома</a></li>
+                <li><a href="comments.html">Отзывы</a></li>
+                <li><a href="../index.html#contacts">Контакты</a></li>
+            </ul>
+        </nav>
+
+        <div class="contact-form">
+            <p class="form-title">Связаться с нами</p>
+            <div class="form-group">
+                <input type="text" placeholder="Задать вопрос" class="form-input">
+                <button class="btn btn--contact">Отправить</button>
+            </div>
+        </div>
+    </footer>
+
+    <footer class="copyright-footer">
+        <a href="../index.html" class="logo-link">
+            <img src="../Images/Logo.svg" alt="To Rent - Аренда недвижимости" class="logo">
+        </a>
+    </footer>
+
+    <script src="../JS/api-client.js"></script>
+    <script src="../JS/app-interactive.js"></script>
+    <script src="../JS/comments.js"></script>
+    <script src="../JS/script-house.js"></script>
+</body>
+</html>

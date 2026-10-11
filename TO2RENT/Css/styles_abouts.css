@@ -1,0 +1,182 @@
+:root {
+    --primary-color: #000000;
+    --secondary-color: #C4C4C4;
+    --text-color: #333333;
+    --light-text: #888888;
+    --white: #FFFFFF;
+    --border-color: #C4C4C4;
+}
+
+/* Базовые стили карточки */
+.appart--card {
+    background-color: var(--secondary-color);
+    border-radius: 20px;
+    width: 95%;
+    margin: 20px auto;
+    padding: 20px;
+    box-sizing: border-box;
+    position: relative;
+    min-height: 600px;
+}
+
+.appart--card h2 {
+    text-align: center;
+    font-size: clamp(24px, 5vw, 50px);
+    color: var(--text-color);
+    line-height: 0.3;
+}
+
+/* Мобильная версия (по умолчанию) */
+.card-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-image {
+    width: 100%;
+    height: auto;
+    border-radius: 20px;
+    box-shadow: 10px 5px 5px var(--light-text);
+    object-fit: fill;
+    margin: 15px 0px;
+}
+
+.thumbnails-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.thumbnail {
+    width: calc(33.33% - 6px);
+    height: 70px;
+    border-radius: 8px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.card-info {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.price {
+    font-size: 22px;
+    font-weight: bold;
+    margin: 20px 50px;
+}
+
+.description {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-color);
+}
+
+.btn--appart {
+    
+    width: 100%;
+    max-width: 250px;
+    height: 50px;
+    margin: 0 auto;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    margin: 0 80px;
+    border-radius: 10px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* Общие стили для всех устройств */
+.thumbnail:hover {
+    transform: scale(1.05);
+}
+
+.thumbnail.active {
+    border-color: var(--primary-color);
+    transform: scale(1.05);
+}
+
+.btn--appart:hover {
+    background-color: #333;
+}
+
+/* ПК версия (1024px и больше) */
+@media (min-width: 1024px) {
+    .appart--card {
+        height: 850px;
+        padding: 40px;
+    }
+
+    .card-content {
+        display: block;
+    }
+
+    .card-image {
+        width: 1000px;
+        height: 500px;
+        position: absolute;
+        top: 100px;
+        left: 400px;
+        margin: 0;
+    }
+
+    .thumbnails-container {
+        width: 1000px;
+        position: absolute;
+        top: 620px;
+        left: 400px;
+        justify-content: space-between;
+        gap: 0;
+    }
+
+    .thumbnail {
+        width: 150px;
+        height: 100px;
+    }
+
+    .card-info {
+        position: absolute;
+        top: 70px;
+        left: 50px;
+        width: 300px;
+        text-align: left;
+    }
+
+    .price {
+        font-size: 28px;
+    }
+
+    .description {
+        font-size: 18px;
+    }
+
+    .btn--appart {
+        position: absolute;
+        bottom: 30px;
+        left: 50px;
+        width: 300px;
+        height: 70px;
+        font-size: 22px;
+        margin: 0;
+    }
+}
+
+/* Планшетная версия (768px-1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .card-image {
+        height: 400px;
+    }
+
+    .thumbnail {
+        height: 90px;
+    }
+
+    .price {
+        font-size: 24px;
+    }
+}

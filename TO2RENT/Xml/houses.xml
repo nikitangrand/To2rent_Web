@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<houses>
+    <house id="1">
+        <title>Коттедж Modern Лос Анджелес</title>
+        <image>../Images/Modern_house.jpg</image>
+        <price currency="$">820000</price>
+        <description>Современный дом передовых технологий</description>
+        <detailLink>about_house_los.html</detailLink>
+        <floors>2</floors>
+        <land_area>500</land_area>
+    </house>
+    <house id="2">
+        <title>Коттедж Семейный Лондон</title>
+        <image>../Images/London.jpg</image>
+        <price currency="$">470000</price>
+        <description>Классический дом с минималистичным дизайном</description>
+        <detailLink>about_house_lon.html</detailLink>
+        <floors>3</floors>
+        <land_area>300</land_area>
+    </house>
+    <house id="3">
+        <title>Коттедж Стандарт Москва</title>
+        <image>../Images/Moscow.jpeg</image>
+        <price currency="$">380000</price>
+        <description>Стандартный дом в строгом стиле</description>
+        <detailLink>about_house_mos.html</detailLink>
+        <floors>2</floors>
+        <land_area>400</land_area>
+    </house>
+    <house id="4">
+        <title>Коттедж Элитный Минск</title>
+        <image>../Images/Minsk.jpg</image>
+        <price currency="$">210000</price>
+        <description>Просторный дом с зимним садом</description>
+        <detailLink>about_house_min.html</detailLink>
+        <floors>2</floors>
+        <land_area>350</land_area>
+    </house>
+</houses>

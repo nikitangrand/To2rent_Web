@@ -1,0 +1,124 @@
+$white: #FFFFFF;
+$text-color: #333333;
+$color_3: #c18c1c;
+$light-text: #888;
+$color_5: white;
+$font-family_1: inherit;
+$background-color: #000000;
+$border-color: #C4C4C4;
+
+.main_reviews {
+	width: 100%;
+	margin: 0 auto;
+	padding: 10px 20px;
+	background-color: $background-color;
+	h1 {
+		color: $white;
+		text-align: center;
+		font-size: 40px;
+	}
+}
+.reviews-section {
+	margin: 60px 0;
+}
+.brand-quote {
+	font-style: italic;
+	color: $white;
+	font-size: 1.2rem;
+	padding-left: 24px;
+	border-left: 3px solid #C4C4C4;
+	margin: 30px 0;
+}
+.com-text {
+	text-align: left;
+	color: $text-color;
+}
+.reviews-container {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 40px;
+}
+.review-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 25px;
+}
+.review {
+	background-color: $border-color;
+	border-left: 5px solid #888888;
+	padding: 24px;
+	border-radius: 8px;
+}
+.stars {
+	color: $color_3;
+	font-size: 20px;
+	margin-bottom: 10px;
+}
+.review-header {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	margin-bottom: 15px;
+}
+.author {
+	font-weight: bold;
+	color: $text-color;
+}
+.date {
+	color: $light-text;
+	font-size: 15px;
+}
+.review-form {
+	background: #C4C4C4;
+	padding: 30px;
+	border-radius: 8px;
+	h2 {
+		color: $text-color;
+		text-align: center;
+		font-size: 40px;
+		margin-bottom: 20px;
+	}
+	label {
+		display: block;
+		margin-bottom: 8px;
+		color: $text-color;
+	}
+	input {
+		width: 100%;
+		padding: 12px;
+		margin-bottom: 20px;
+		border: 1px solid #C4C4C4;
+		border-radius: 4px;
+		font-family: $font-family_1;
+	}
+	textarea {
+		width: 100%;
+		padding: 12px;
+		margin-bottom: 20px;
+		border: 1px solid #C4C4C4;
+		border-radius: 4px;
+		font-family: $font-family_1;
+		resize: vertical;
+		min-height: 120px;
+	}
+}
+.submit-btn {
+	background: #888888;
+	color: $color_5;
+	border: none;
+	padding: 12px 30px;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: background 0.3s;
+	&:hover {
+		background: #000000;
+		color: $white;
+	}
+}
+@media (min-width: 768px) {
+	.reviews-container {
+		grid-template-columns: 2fr 1fr;
+	}
+}
