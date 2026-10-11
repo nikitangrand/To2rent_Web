@@ -23,6 +23,7 @@ public interface IBookingService
     Task<bool> DeleteBookingAsync(int id);
     Task<IEnumerable<Booking>> GetUserBookingsAsync(int userId, string? email = null, string? phone = null);
     Task<Booking?> CancelBookingAsync(int id, int? requestingUserId = null);
+    Task<List<BookedDateRangeDto>> GetBookedDatesForPropertyAsync(int propertyId);
 }
 
 public interface IReviewService

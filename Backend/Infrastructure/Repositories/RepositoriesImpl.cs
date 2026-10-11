@@ -203,6 +203,33 @@ public class BookingRepository : IBookingRepository
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
     }
+
+    public async Task<List<Booking>> GetActiveBookingsForPropertyAsync(int propertyId)
+    {
+        var now = DateTime.UtcNow.Date;
+        return await _context.Bookings
+            .Where(b => b.PropertyId == propertyId &&
+                        (b.Status == "Pending" || b.Status == "Confirmed") &&
+                        b.CheckOutDate >= now)
+            .OrderBy(b => b.CheckInDate)
+            .ToListAsync();
+    }
+
+    public async Task<bool> HasOverlappingBookingAsync(int propertyId, DateTime checkInDate, DateTime checkOutDate, int? excludeBookingId = null)
+    {
+        var query = _context.Bookings
+            .Where(b => b.PropertyId == propertyId &&
+                        (b.Status == "Pending" || b.Status == "Confirmed") &&
+                        b.CheckInDate < checkOutDate &&
+                        b.CheckOutDate > checkInDate);
+
+        if (excludeBookingId.HasValue)
+        {
+            query = query.Where(b => b.Id != excludeBookingId.Value);
+        }
+
+        return await query.AnyAsync();
+    }
 }
 
 public class ReviewRepository : IReviewRepository

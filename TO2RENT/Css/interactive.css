@@ -1207,3 +1207,77 @@ textarea.input-field {
   font-size: 14px;
 }
 
+
+/* ==========================================================================
+   Date Availability & Overbooking Protection System
+   ========================================================================== */
+.booking-availability-panel {
+  background: #fbfbfb;
+  border: 1px solid #e0e0e0;
+  border-radius: 0;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.booking-availability-header {
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #555555;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.booking-availability-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.booked-date-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #eeeeee;
+  color: #222222;
+  border: 1px solid #d0d0d0;
+  border-radius: 0;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-weight: 600;
+}
+
+.booked-date-badge.status-confirmed {
+  background: #f5f5f5;
+  border-color: #999999;
+}
+
+.booking-available-pill {
+  color: #2e7d32;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.booking-conflict-alert {
+  background: #fbe9e7;
+  color: #b71c1c;
+  border-left: 3px solid #b71c1c;
+  padding: 10px 14px;
+  margin-top: 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  border-radius: 0;
+}
+
+.input-field.input-conflict {
+  border-color: #b71c1c !important;
+  background-color: #fffaf9 !important;
+}

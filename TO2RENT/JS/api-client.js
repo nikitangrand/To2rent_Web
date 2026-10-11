@@ -181,6 +181,10 @@ const To2RentApi = (() => {
             });
         },
 
+        getBookedDates(propertyId) {
+            return request(`/api/properties/${propertyId}/booked-dates`);
+        },
+
         updateBookingStatus(id, status) {
             return request(`/api/bookings/${id}/status`, {
                 method: 'PATCH',

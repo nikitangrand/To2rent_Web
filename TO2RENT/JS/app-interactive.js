@@ -298,6 +298,7 @@ async function handleAuthRegisterSubmit(e) {
 // ==========================================================================
 let bookingModal = null;
 let currentBookingProperty = null;
+let currentPropertyBookedDates = [];
 
 function initBookingModal() {
     if (document.getElementById('bookingModalOverlay')) return;
@@ -315,6 +316,14 @@ function initBookingModal() {
                     <h4 id="bookingPropTitle">Название объекта</h4>
                     <div class="preview-price" id="bookingPropPrice">0 $</div>
                 </div>
+            </div>
+
+            <div class="booking-availability-panel" id="bookingAvailabilityPanel" style="display: none;">
+                <div class="booking-availability-header">
+                    <span>Календарь занятости</span>
+                    <span id="bookingAvailabilityStatusBadge"></span>
+                </div>
+                <div id="bookingAvailabilityContent">Загрузка информации...</div>
             </div>
 
             <form id="bookingForm">
@@ -342,6 +351,12 @@ function initBookingModal() {
                     <div>
                         <label class="input-label" for="bookCheckOut">Дата выезда *</label>
                         <input type="date" id="bookCheckOut" class="input-field" required>
+                    </div>
+
+                    <div class="form-group-full" id="bookingConflictNoticeWrapper" style="display: none;">
+                        <div class="booking-conflict-alert" id="bookingConflictAlert">
+                            Выбранный период пересекается с существующим бронированием. Пожалуйста, укажите другие даты.
+                        </div>
                     </div>
 
                     <div class="form-group-full">
@@ -393,14 +408,24 @@ function initBookingModal() {
     form?.addEventListener('submit', handleBookingSubmit);
 }
 
-function openBookingModal(property = {}) {
+async function openBookingModal(property = {}) {
     initBookingModal();
     currentBookingProperty = property;
+    currentPropertyBookedDates = [];
 
     const preview = document.getElementById('bookingPropertyPreview');
     const titleEl = document.getElementById('bookingPropTitle');
     const priceEl = document.getElementById('bookingPropPrice');
     const imgEl = document.getElementById('bookingPropImg');
+    const conflictWrapper = document.getElementById('bookingConflictNoticeWrapper');
+    const submitBtn = document.getElementById('bookingSubmitBtn');
+
+    if (conflictWrapper) conflictWrapper.style.display = 'none';
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.textContent = 'Подтвердить бронирование';
+    }
 
     if (property && property.title) {
         preview.style.display = 'flex';
@@ -429,17 +454,129 @@ function openBookingModal(property = {}) {
     const checkOut = new Date(tomorrow);
     checkOut.setDate(tomorrow.getDate() + 7);
 
-    document.getElementById('bookCheckIn').value = formatDateIso(tomorrow);
-    document.getElementById('bookCheckOut').value = formatDateIso(checkOut);
-    document.getElementById('bookCheckIn').min = formatDateIso(tomorrow);
-    document.getElementById('bookCheckOut').min = formatDateIso(tomorrow);
+    const checkInInput = document.getElementById('bookCheckIn');
+    const checkOutInput = document.getElementById('bookCheckOut');
+    checkInInput.value = formatDateIso(tomorrow);
+    checkOutInput.value = formatDateIso(checkOut);
+    checkInInput.min = formatDateIso(tomorrow);
+    checkOutInput.min = formatDateIso(tomorrow);
+    checkInInput.classList.remove('input-conflict');
+    checkOutInput.classList.remove('input-conflict');
 
     updateBookingPriceCalculation();
     bookingModal?.classList.add('active');
+
+    if (property && property.id) {
+        await loadPropertyBookedDates(property.id);
+    } else {
+        const panel = document.getElementById('bookingAvailabilityPanel');
+        if (panel) panel.style.display = 'none';
+    }
 }
 
 function closeBookingModal() {
     bookingModal?.classList.remove('active');
+}
+
+async function loadPropertyBookedDates(propertyId) {
+    const panel = document.getElementById('bookingAvailabilityPanel');
+    const content = document.getElementById('bookingAvailabilityContent');
+    const badge = document.getElementById('bookingAvailabilityStatusBadge');
+    if (!panel || !content) return;
+
+    panel.style.display = 'block';
+    content.innerHTML = '<span style="color: #888;">Проверка занятых дат...</span>';
+    if (badge) badge.innerHTML = '';
+
+    try {
+        const dates = await To2RentApi.getBookedDates(propertyId);
+        currentPropertyBookedDates = Array.isArray(dates) ? dates : [];
+
+        if (currentPropertyBookedDates.length === 0) {
+            if (badge) badge.innerHTML = '<span class="booking-available-pill">Свободен</span>';
+            content.innerHTML = '<span style="color: #555;">Объект свободен на любые ближайшие даты.</span>';
+        } else {
+            if (badge) badge.innerHTML = `<span style="color: #555; font-weight: 600;">Занято периодов: ${currentPropertyBookedDates.length}</span>`;
+            const badgesHtml = currentPropertyBookedDates.map(r => {
+                const s = formatDateRussian(r.startDate || r.CheckInDate);
+                const e = formatDateRussian(r.endDate || r.CheckOutDate);
+                return `<span class="booked-date-badge status-confirmed">с ${s} по ${e}</span>`;
+            }).join('');
+            content.innerHTML = `
+                <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Зарезервированные периоды:</div>
+                <div class="booking-availability-list">${badgesHtml}</div>
+            `;
+        }
+    } catch (_) {
+        content.innerHTML = '<span style="color: #888;">Информация о доступности дат недоступна.</span>';
+    }
+
+    validateSelectedDates();
+}
+
+function validateSelectedDates() {
+    const inInput = document.getElementById('bookCheckIn');
+    const outInput = document.getElementById('bookCheckOut');
+    const conflictWrapper = document.getElementById('bookingConflictNoticeWrapper');
+    const conflictAlert = document.getElementById('bookingConflictAlert');
+    const submitBtn = document.getElementById('bookingSubmitBtn');
+
+    if (!inInput || !outInput) return true;
+
+    inInput.classList.remove('input-conflict');
+    outInput.classList.remove('input-conflict');
+    if (conflictWrapper) conflictWrapper.style.display = 'none';
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+    }
+
+    const inVal = inInput.value;
+    const outVal = outInput.value;
+    if (!inVal || !outVal) return true;
+
+    const inDate = new Date(inVal);
+    const outDate = new Date(outVal);
+
+    if (outDate <= inDate) {
+        if (conflictWrapper && conflictAlert) {
+            conflictWrapper.style.display = 'block';
+            conflictAlert.textContent = 'Дата выезда должна быть позже даты заезда минимум на 1 день.';
+        }
+        inInput.classList.add('input-conflict');
+        outInput.classList.add('input-conflict');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+        }
+        return false;
+    }
+
+    if (currentPropertyBookedDates && currentPropertyBookedDates.length > 0) {
+        for (const range of currentPropertyBookedDates) {
+            const rangeStart = new Date(range.startDate || range.CheckInDate);
+            const rangeEnd = new Date(range.endDate || range.CheckOutDate);
+
+            // Interval overlap check: inDate < rangeEnd && outDate > rangeStart
+            if (inDate < rangeEnd && outDate > rangeStart) {
+                const sStr = formatDateRussian(rangeStart);
+                const eStr = formatDateRussian(rangeEnd);
+                if (conflictWrapper && conflictAlert) {
+                    conflictWrapper.style.display = 'block';
+                    conflictAlert.textContent = `Выбранный период пересекается с существующей бронью (с ${sStr} по ${eStr}). Пожалуйста, выберите другие даты.`;
+                }
+                inInput.classList.add('input-conflict');
+                outInput.classList.add('input-conflict');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.5';
+                }
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 function updateBookingPriceCalculation() {
@@ -449,6 +586,8 @@ function updateBookingPriceCalculation() {
     const daysEl = document.getElementById('bookingDaysCount');
 
     if (!inVal || !outVal || !totalEl || !daysEl) return;
+
+    validateSelectedDates();
 
     const inDate = new Date(inVal);
     const outDate = new Date(outVal);
@@ -473,6 +612,12 @@ function updateBookingPriceCalculation() {
 
 async function handleBookingSubmit(e) {
     e.preventDefault();
+
+    if (!validateSelectedDates()) {
+        showToast('Некорректные даты', 'Выбранные даты пересекаются с другой бронью.', 'warning');
+        return;
+    }
+
     const submitBtn = document.getElementById('bookingSubmitBtn');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Оформление...';
@@ -515,6 +660,9 @@ async function handleBookingSubmit(e) {
         document.getElementById('bookingForm').reset();
     } catch (err) {
         showToast('Ошибка оформления', err.message || 'Не удалось отправить заявку.', 'error');
+        if (currentBookingProperty && currentBookingProperty.id) {
+            loadPropertyBookedDates(currentBookingProperty.id);
+        }
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Подтвердить бронирование';

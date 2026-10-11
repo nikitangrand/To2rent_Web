@@ -25,6 +25,8 @@ public interface IBookingRepository
     Task<int> CountAsync(string? status = null);
     Task<decimal> GetTotalRevenueAsync();
     Task<IEnumerable<Booking>> GetByUserIdAsync(int userId, string? email = null, string? phone = null);
+    Task<List<Booking>> GetActiveBookingsForPropertyAsync(int propertyId);
+    Task<bool> HasOverlappingBookingAsync(int propertyId, DateTime checkInDate, DateTime checkOutDate, int? excludeBookingId = null);
 }
 
 public interface IReviewRepository

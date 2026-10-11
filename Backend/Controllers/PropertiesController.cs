@@ -10,10 +10,19 @@ namespace Backend.Controllers;
 public class PropertiesController : ControllerBase
 {
     private readonly IPropertyService _propertyService;
+    private readonly IBookingService _bookingService;
 
-    public PropertiesController(IPropertyService propertyService)
+    public PropertiesController(IPropertyService propertyService, IBookingService bookingService)
     {
         _propertyService = propertyService;
+        _bookingService = bookingService;
+    }
+
+    [HttpGet("{id}/booked-dates")]
+    public async Task<ActionResult<List<BookedDateRangeDto>>> GetBookedDates(int id)
+    {
+        var dates = await _bookingService.GetBookedDatesForPropertyAsync(id);
+        return Ok(dates);
     }
 
     [HttpGet]

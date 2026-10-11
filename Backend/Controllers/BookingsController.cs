@@ -43,8 +43,26 @@ public class BookingsController : ControllerBase
             return BadRequest(new { message = "Номер телефона обязателен" });
         }
 
-        var created = await _bookingService.CreateBookingAsync(dto);
-        return CreatedAtAction(nameof(GetBooking), new { id = created.Id }, created);
+        try
+        {
+            var created = await _bookingService.CreateBookingAsync(dto);
+            return CreatedAtAction(nameof(GetBooking), new { id = created.Id }, created);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("property/{propertyId}/booked-dates")]
+    public async Task<ActionResult<List<BookedDateRangeDto>>> GetBookedDates(int propertyId)
+    {
+        var dates = await _bookingService.GetBookedDatesForPropertyAsync(propertyId);
+        return Ok(dates);
     }
 
     [HttpPatch("{id}/status")]

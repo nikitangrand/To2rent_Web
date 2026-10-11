@@ -126,6 +126,25 @@ public class BookingService : IBookingService
         var checkIn = dto.CheckInDate == default ? DateTime.UtcNow.Date.AddDays(1) : dto.CheckInDate;
         var checkOut = dto.CheckOutDate == default || dto.CheckOutDate <= checkIn ? checkIn.AddDays(7) : dto.CheckOutDate;
 
+        if (checkIn.Date < DateTime.UtcNow.Date.AddDays(-1))
+        {
+            throw new ArgumentException("Дата заезда не может быть в прошлом.");
+        }
+
+        if (checkOut.Date <= checkIn.Date)
+        {
+            throw new ArgumentException("Дата выезда должна быть позже даты заезда минимум на 1 день.");
+        }
+
+        if (dto.PropertyId.HasValue && dto.PropertyId.Value > 0)
+        {
+            var isOverlap = await _bookingRepo.HasOverlappingBookingAsync(dto.PropertyId.Value, checkIn, checkOut);
+            if (isOverlap)
+            {
+                throw new InvalidOperationException("Выбранные даты уже забронированы для этого объекта. Пожалуйста, выберите другие свободные даты.");
+            }
+        }
+
         var propertyTitle = dto.PropertyTitle;
         var totalPrice = dto.TotalPrice;
 
@@ -235,6 +254,17 @@ public class BookingService : IBookingService
         });
 
         return updated;
+    }
+
+    public async Task<List<BookedDateRangeDto>> GetBookedDatesForPropertyAsync(int propertyId)
+    {
+        var bookings = await _bookingRepo.GetActiveBookingsForPropertyAsync(propertyId);
+        return bookings.Select(b => new BookedDateRangeDto
+        {
+            StartDate = b.CheckInDate,
+            EndDate = b.CheckOutDate,
+            Status = b.Status
+        }).ToList();
     }
 }
 
