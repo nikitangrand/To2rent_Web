@@ -425,3 +425,79 @@ public class UserRepository : IUserRepository
     }
 }
 
+public class FavoriteRepository : IFavoriteRepository
+{
+    private readonly AppDbContext _context;
+
+    public FavoriteRepository(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IEnumerable<Property>> GetUserFavoritesAsync(int userId)
+    {
+        var propertyIds = await _context.Favorites
+            .Where(f => f.UserId == userId)
+            .OrderByDescending(f => f.CreatedAt)
+            .Select(f => f.PropertyId)
+            .ToListAsync();
+
+        if (propertyIds.Count == 0) return Enumerable.Empty<Property>();
+
+        var properties = await _context.Properties
+            .Where(p => propertyIds.Contains(p.Id))
+            .ToListAsync();
+
+        return propertyIds
+            .Select(id => properties.FirstOrDefault(p => p.Id == id))
+            .Where(p => p != null)
+            .Cast<Property>()
+            .ToList();
+    }
+
+    public async Task<List<int>> GetFavoritePropertyIdsAsync(int userId)
+    {
+        return await _context.Favorites
+            .Where(f => f.UserId == userId)
+            .Select(f => f.PropertyId)
+            .ToListAsync();
+    }
+
+    public async Task<bool> AddAsync(int userId, int propertyId)
+    {
+        var exists = await _context.Favorites
+            .AnyAsync(f => f.UserId == userId && f.PropertyId == propertyId);
+
+        if (exists) return true;
+
+        var favorite = new Favorite
+        {
+            UserId = userId,
+            PropertyId = propertyId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Favorites.Add(favorite);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> RemoveAsync(int userId, int propertyId)
+    {
+        var existing = await _context.Favorites
+            .FirstOrDefaultAsync(f => f.UserId == userId && f.PropertyId == propertyId);
+
+        if (existing == null) return false;
+
+        _context.Favorites.Remove(existing);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> IsFavoriteAsync(int userId, int propertyId)
+    {
+        return await _context.Favorites
+            .AnyAsync(f => f.UserId == userId && f.PropertyId == propertyId);
+    }
+}
+

@@ -71,6 +71,7 @@ builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IInquiryRepository, InquiryRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 
 // Services (Business Logic & Dependency Inversion)
 builder.Services.AddScoped<IPropertyService, PropertyService>();
@@ -79,6 +80,7 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IInquiryService, InquiryService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 
 // Kafka Event Messaging (Open/Closed Principle)
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));

@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Inquiry> Inquiries => Set<Inquiry>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<Favorite> Favorites => Set<Favorite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,5 +25,6 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Review>().ToTable("Reviews");
         modelBuilder.Entity<Inquiry>().ToTable("Inquiries");
         modelBuilder.Entity<User>().ToTable("Users");
+        modelBuilder.Entity<Favorite>().ToTable("Favorites");
     }
 }

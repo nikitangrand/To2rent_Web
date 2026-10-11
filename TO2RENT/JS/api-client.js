@@ -257,6 +257,27 @@ const To2RentApi = (() => {
             });
         },
 
+        // Favorites
+        getUserFavorites(userId) {
+            return request(`/api/favorites/user/${userId}`);
+        },
+
+        getUserFavoriteIds(userId) {
+            return request(`/api/favorites/user/${userId}/ids`);
+        },
+
+        addFavorite(userId, propertyId) {
+            return request(`/api/favorites/user/${userId}/${propertyId}`, {
+                method: 'POST'
+            });
+        },
+
+        removeFavorite(userId, propertyId) {
+            return request(`/api/favorites/user/${userId}/${propertyId}`, {
+                method: 'DELETE'
+            });
+        },
+
         // Inquiries / Contacts
         getInquiries(status = null) {
             const endpoint = status ? `/api/inquiries?status=${encodeURIComponent(status)}` : '/api/inquiries';

@@ -11,9 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     bindFooterForms();
     highlightCurrentNavLink();
     initDetailPageReviews();
+    syncFavoritesWithServer();
 
     window.addEventListener('to2rent:auth_changed', () => {
         renderAuthNavbar();
+        syncFavoritesWithServer();
     });
 });
 
@@ -986,6 +988,7 @@ function initClientDashboardModal() {
 
             <div class="client-tabs">
                 <button type="button" class="client-tab-btn active" id="tabBtnMyBookings">Мои бронирования (<span id="userBookingsCount">0</span>)</button>
+                <button type="button" class="client-tab-btn" id="tabBtnMyFavorites">Избранное (<span id="userFavoritesCount">0</span>)</button>
                 <button type="button" class="client-tab-btn" id="tabBtnMyProfile">Мой профиль</button>
             </div>
 
@@ -1002,7 +1005,14 @@ function initClientDashboardModal() {
                 </div>
             </div>
 
-            <!-- TAB 2: PROFILE -->
+            <!-- TAB 2: FAVORITES -->
+            <div class="client-tab-pane" id="paneMyFavorites" style="display: none;">
+                <div class="client-favorites-container" id="userFavoritesList">
+                    <div class="client-loading-spinner">Загрузка избранного...</div>
+                </div>
+            </div>
+
+            <!-- TAB 3: PROFILE -->
             <div class="client-tab-pane" id="paneMyProfile" style="display: none;">
                 <form id="clientProfileForm">
                     <div class="form-grid">
@@ -1061,6 +1071,7 @@ function initClientDashboardModal() {
 
     // Tab buttons
     document.getElementById('tabBtnMyBookings')?.addEventListener('click', () => switchClientTab('bookings'));
+    document.getElementById('tabBtnMyFavorites')?.addEventListener('click', () => switchClientTab('favorites'));
     document.getElementById('tabBtnMyProfile')?.addEventListener('click', () => switchClientTab('profile'));
 
     // Filter chips
@@ -1097,20 +1108,30 @@ function closeClientDashboardModal() {
 
 function switchClientTab(tabName) {
     const tabBookingsBtn = document.getElementById('tabBtnMyBookings');
+    const tabFavoritesBtn = document.getElementById('tabBtnMyFavorites');
     const tabProfileBtn = document.getElementById('tabBtnMyProfile');
     const paneBookings = document.getElementById('paneMyBookings');
+    const paneFavorites = document.getElementById('paneMyFavorites');
     const paneProfile = document.getElementById('paneMyProfile');
 
+    tabBookingsBtn?.classList.remove('active');
+    tabFavoritesBtn?.classList.remove('active');
+    tabProfileBtn?.classList.remove('active');
+
+    if (paneBookings) paneBookings.style.display = 'none';
+    if (paneFavorites) paneFavorites.style.display = 'none';
+    if (paneProfile) paneProfile.style.display = 'none';
+
     if (tabName === 'profile') {
-        tabBookingsBtn?.classList.remove('active');
         tabProfileBtn?.classList.add('active');
-        if (paneBookings) paneBookings.style.display = 'none';
         if (paneProfile) paneProfile.style.display = 'block';
+    } else if (tabName === 'favorites') {
+        tabFavoritesBtn?.classList.add('active');
+        if (paneFavorites) paneFavorites.style.display = 'block';
+        renderUserFavorites();
     } else {
         tabBookingsBtn?.classList.add('active');
-        tabProfileBtn?.classList.remove('active');
         if (paneBookings) paneBookings.style.display = 'block';
-        if (paneProfile) paneProfile.style.display = 'none';
     }
 }
 
@@ -1327,6 +1348,21 @@ async function initDetailPageReviews() {
             priceEl.parentNode.insertBefore(pill, priceEl.nextSibling);
         }
 
+        // Add Favorite button next to "Забронировать"
+        const appartBtn = card.querySelector('.btn--appart');
+        if (appartBtn && !card.querySelector('.btn--favorite')) {
+            const favBtn = document.createElement('button');
+            favBtn.className = 'btn btn--favorite';
+            favBtn.type = 'button';
+            favBtn.id = 'detailFavoriteBtn';
+            favBtn.setAttribute('data-prop-id', prop.id);
+            favBtn.setAttribute('data-prop-title', prop.title);
+            const isFav = isPropertyFavorite(prop.id);
+            favBtn.textContent = isFav ? 'В избранном' : 'В избранное';
+            if (isFav) favBtn.classList.add('is-active');
+            appartBtn.parentNode.insertBefore(favBtn, appartBtn.nextSibling);
+        }
+
         // Add Reviews Section below card
         const reviewsSection = document.createElement('section');
         reviewsSection.className = 'property-reviews-block';
@@ -1465,6 +1501,267 @@ async function initDetailPageReviews() {
     }
 }
 
+// ==========================================================================
+// 8. Favorites System (Wishlist, LocalStorage + Backend Sync, Zero Emojis)
+// ==========================================================================
+
+function getFavoritesStorageKey() {
+    const user = To2RentApi.getCurrentUser();
+    return user ? `to2rent_favs_user_${user.id}` : 'to2rent_favs_guest';
+}
+
+function getLocalFavoriteIds() {
+    try {
+        const raw = localStorage.getItem(getFavoritesStorageKey());
+        if (!raw) return [];
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.map(Number).filter(n => !isNaN(n) && n > 0) : [];
+    } catch (_) {
+        return [];
+    }
+}
+
+function setLocalFavoriteIds(ids) {
+    try {
+        const unique = Array.from(new Set(ids.map(Number).filter(n => !isNaN(n) && n > 0)));
+        localStorage.setItem(getFavoritesStorageKey(), JSON.stringify(unique));
+        updateAllFavoriteButtons();
+        updateFavoritesTabCount();
+    } catch (_) {}
+}
+
+function isPropertyFavorite(propId) {
+    const id = Number(propId);
+    return getLocalFavoriteIds().includes(id);
+}
+
+function updateFavoritesTabCount() {
+    const countEl = document.getElementById('userFavoritesCount');
+    if (countEl) {
+        countEl.textContent = getLocalFavoriteIds().length;
+    }
+}
+
+async function syncFavoritesWithServer() {
+    const user = To2RentApi.getCurrentUser();
+    if (!user) {
+        updateAllFavoriteButtons();
+        updateFavoritesTabCount();
+        return;
+    }
+
+    try {
+        // Migrate any anonymous guest favorites
+        const guestRaw = localStorage.getItem('to2rent_favs_guest');
+        if (guestRaw) {
+            try {
+                const guestIds = JSON.parse(guestRaw) || [];
+                if (Array.isArray(guestIds) && guestIds.length > 0) {
+                    for (const gid of guestIds) {
+                        try {
+                            await To2RentApi.addFavorite(user.id, gid);
+                        } catch (_) {}
+                    }
+                    localStorage.removeItem('to2rent_favs_guest');
+                }
+            } catch (_) {}
+        }
+
+        // Fetch favorites from backend
+        const serverIds = await To2RentApi.getUserFavoriteIds(user.id);
+        const combined = Array.from(new Set([...getLocalFavoriteIds(), ...(serverIds || [])]));
+        setLocalFavoriteIds(combined);
+    } catch (err) {
+        console.warn('Синхронизация избранного с сервером:', err);
+    } finally {
+        updateAllFavoriteButtons();
+        updateFavoritesTabCount();
+    }
+}
+
+async function togglePropertyFavorite(propId, propTitle = '') {
+    const id = parseInt(propId, 10);
+    if (!id) return;
+
+    const currentIds = getLocalFavoriteIds();
+    const isFav = currentIds.includes(id);
+    const user = To2RentApi.getCurrentUser();
+
+    if (isFav) {
+        const nextIds = currentIds.filter(x => x !== id);
+        setLocalFavoriteIds(nextIds);
+        showToast('Избранное', propTitle ? `«${propTitle}» удален из избранного.` : 'Объект удален из избранного.', 'info');
+
+        if (user) {
+            try {
+                await To2RentApi.removeFavorite(user.id, id);
+            } catch (err) {
+                console.warn('Ошибка удаления из избранного на сервере:', err);
+            }
+        }
+    } else {
+        const nextIds = [...currentIds, id];
+        setLocalFavoriteIds(nextIds);
+        showToast('Избранное', propTitle ? `«${propTitle}» добавлен в избранное.` : 'Объект добавлен в избранное.', 'success');
+
+        if (user) {
+            try {
+                await To2RentApi.addFavorite(user.id, id);
+            } catch (err) {
+                console.warn('Ошибка добавления в избранное на сервере:', err);
+            }
+        }
+    }
+
+    updateAllFavoriteButtons();
+    updateFavoritesTabCount();
+
+    // If client dashboard favorites pane is open, refresh it
+    const favPane = document.getElementById('paneMyFavorites');
+    if (favPane && favPane.style.display !== 'none') {
+        renderUserFavorites();
+    }
+}
+
+function updateAllFavoriteButtons() {
+    const favIds = getLocalFavoriteIds();
+    document.querySelectorAll('.btn-fav-toggle, .btn--favorite').forEach(btn => {
+        const id = parseInt(btn.getAttribute('data-prop-id'), 10);
+        if (id && favIds.includes(id)) {
+            btn.classList.add('is-active');
+            btn.textContent = 'В избранном';
+        } else {
+            btn.classList.remove('is-active');
+            btn.textContent = 'В избранное';
+        }
+    });
+}
+
+async function renderUserFavorites() {
+    const listContainer = document.getElementById('userFavoritesList');
+    if (!listContainer) return;
+
+    const favIds = getLocalFavoriteIds();
+    updateFavoritesTabCount();
+
+    if (!favIds || favIds.length === 0) {
+        listContainer.innerHTML = `
+            <div class="client-empty-favorites">
+                <h4>В вашем списке пока нет избранных объектов</h4>
+                <p>Добавляйте понравившиеся квартиры и дома в каталог, чтобы быстро вернуться к ним позже.</p>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <a href="/Html-Pages/apartments.html" class="modal-submit-btn" style="width: auto; padding: 8px 20px; text-decoration: none;">Каталог квартир</a>
+                    <a href="/Html-Pages/houses.html" class="modal-submit-btn" style="width: auto; padding: 8px 20px; text-decoration: none; background: #333;">Каталог домов</a>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    listContainer.innerHTML = '<div class="client-loading-spinner">Загрузка избранных объектов...</div>';
+
+    try {
+        let allProps = [];
+        try {
+            allProps = await To2RentApi.getProperties();
+        } catch (_) {}
+
+        if (!allProps || allProps.length === 0) {
+            const apts = await loadApartmentsFromXmlFallback('', '', '', '', '', '');
+            const hss = await loadHousesFromXmlFallback('', '', '', '', '', '');
+            allProps = [...(apts || []), ...(hss || [])];
+        }
+
+        const favProps = allProps.filter(p => favIds.includes(p.id));
+
+        if (favProps.length === 0) {
+            listContainer.innerHTML = `
+                <div class="client-empty-favorites">
+                    <h4>Объекты из избранного не найдены</h4>
+                    <p>Возможно, выбранные объекты были сняты с публикации или изменены.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let gridHtml = '<div class="client-favorites-grid">';
+        favProps.forEach(item => {
+            let img = item.image || '';
+            if (img && !img.startsWith('../') && !img.startsWith('http') && !img.startsWith('/')) {
+                img = '../' + img;
+            }
+            gridHtml += `
+                <div class="client-fav-card">
+                    <img src="${img}" alt="${escapeHtml(item.title)}" class="client-fav-card-img" onerror="this.src='../Images/Modern_house.jpg'">
+                    <div class="client-fav-card-body">
+                        <h4 class="client-fav-card-title">${escapeHtml(item.title)}</h4>
+                        <div class="client-fav-card-city">${escapeHtml(item.city || '')}</div>
+                        <div class="client-fav-card-price">${formatNumber(item.price)} ${item.currency || '$'} / сутки</div>
+                        <div class="client-fav-card-actions">
+                            <button type="button" class="modal-submit-btn" onclick="openBookingFromFavorite(${item.id})">Забронировать</button>
+                            <button type="button" class="btn-client-cancel" onclick="removeFavoriteFromDashboard(${item.id})">Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        gridHtml += '</div>';
+
+        listContainer.innerHTML = gridHtml;
+    } catch (err) {
+        listContainer.innerHTML = `<div class="client-empty-favorites"><p>Ошибка загрузки избранного: ${escapeHtml(err.message)}</p></div>`;
+    }
+}
+
+async function openBookingFromFavorite(propertyId) {
+    try {
+        const id = parseInt(propertyId, 10);
+        let properties = await To2RentApi.getProperties();
+        let prop = Array.isArray(properties) ? properties.find(p => p.id === id) : null;
+        if (!prop) {
+            const apts = await loadApartmentsFromXmlFallback('', '', '', '', '', '');
+            const hss = await loadHousesFromXmlFallback('', '', '', '', '', '');
+            prop = [...(apts || []), ...(hss || [])].find(p => p.id === id);
+        }
+        if (prop) {
+            closeClientDashboardModal();
+            let img = prop.image;
+            if (img && !img.startsWith('../') && !img.startsWith('http') && !img.startsWith('/')) {
+                img = '../' + img;
+            }
+            openBookingModal({
+                id: prop.id,
+                title: prop.title,
+                price: prop.price,
+                currency: prop.currency || '$',
+                image: img
+            });
+        }
+    } catch (err) {
+        showToast('Ошибка', 'Не удалось открыть форму бронирования.', 'error');
+    }
+}
+
+async function removeFavoriteFromDashboard(propertyId) {
+    await togglePropertyFavorite(propertyId);
+    renderUserFavorites();
+}
+
+// Global click delegation for favorites buttons
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-fav-toggle, .btn--favorite');
+    if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const propId = parseInt(btn.getAttribute('data-prop-id'), 10);
+        const propTitle = btn.getAttribute('data-prop-title') || '';
+        if (propId) {
+            togglePropertyFavorite(propId, propTitle);
+        }
+    }
+});
+
+// Exports to window
 window.showToast = showToast;
 window.openBookingModal = openBookingModal;
 window.openManagerModal = openManagerModal;
@@ -1474,3 +1771,9 @@ window.renderAuthNavbar = renderAuthNavbar;
 window.openClientDashboardModal = openClientDashboardModal;
 window.closeClientDashboardModal = closeClientDashboardModal;
 window.handleClientCancelBooking = handleClientCancelBooking;
+window.togglePropertyFavorite = togglePropertyFavorite;
+window.isPropertyFavorite = isPropertyFavorite;
+window.renderUserFavorites = renderUserFavorites;
+window.openBookingFromFavorite = openBookingFromFavorite;
+window.removeFavoriteFromDashboard = removeFavoriteFromDashboard;
+window.updateAllFavoriteButtons = updateAllFavoriteButtons;

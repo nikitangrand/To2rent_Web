@@ -177,7 +177,10 @@ function renderApartmentsList(items, container, countEl) {
                     </a>
                 </div>
             </div>
-            <button class="btn btn--appart" type="button">Забронировать</button>
+            <div style="display: flex; gap: 8px; width: 100%;">
+                <button class="btn btn--appart" type="button" style="flex: 1;">Забронировать</button>
+                <button class="btn btn-fav-toggle ${window.isPropertyFavorite && window.isPropertyFavorite(item.id) ? 'is-active' : ''}" type="button" data-prop-id="${item.id}" data-prop-title="${escapeHtml(item.title)}">${window.isPropertyFavorite && window.isPropertyFavorite(item.id) ? 'В избранном' : 'В избранное'}</button>
+            </div>
         `;
 
         // Image click toggle animation
@@ -200,6 +203,10 @@ function renderApartmentsList(items, container, countEl) {
 
         container.appendChild(card);
     });
+
+    if (window.updateAllFavoriteButtons) {
+        window.updateAllFavoriteButtons();
+    }
 }
 
 // Fallback loader from XML if backend is offline

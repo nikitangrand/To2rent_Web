@@ -62,3 +62,12 @@ public interface IEventPublisher
 {
     Task PublishAsync<T>(string topic, string key, T message) where T : class;
 }
+
+public interface IFavoriteService
+{
+    Task<IEnumerable<Property>> GetFavoritesAsync(int userId);
+    Task<List<int>> GetFavoritePropertyIdsAsync(int userId);
+    Task<bool> AddFavoriteAsync(int userId, int propertyId);
+    Task<bool> RemoveFavoriteAsync(int userId, int propertyId);
+    Task<bool> IsFavoriteAsync(int userId, int propertyId);
+}

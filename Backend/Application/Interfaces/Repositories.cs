@@ -61,3 +61,12 @@ public interface IUserRepository
     Task<IEnumerable<User>> GetAllAsync();
 }
 
+public interface IFavoriteRepository
+{
+    Task<IEnumerable<Property>> GetUserFavoritesAsync(int userId);
+    Task<List<int>> GetFavoritePropertyIdsAsync(int userId);
+    Task<bool> AddAsync(int userId, int propertyId);
+    Task<bool> RemoveAsync(int userId, int propertyId);
+    Task<bool> IsFavoriteAsync(int userId, int propertyId);
+}
+

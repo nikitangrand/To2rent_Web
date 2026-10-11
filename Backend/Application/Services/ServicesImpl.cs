@@ -583,3 +583,38 @@ public class AuthService : IAuthService
     };
 }
 
+public class FavoriteService : IFavoriteService
+{
+    private readonly IFavoriteRepository _favoriteRepo;
+
+    public FavoriteService(IFavoriteRepository favoriteRepo)
+    {
+        _favoriteRepo = favoriteRepo;
+    }
+
+    public async Task<IEnumerable<Property>> GetFavoritesAsync(int userId)
+    {
+        return await _favoriteRepo.GetUserFavoritesAsync(userId);
+    }
+
+    public async Task<List<int>> GetFavoritePropertyIdsAsync(int userId)
+    {
+        return await _favoriteRepo.GetFavoritePropertyIdsAsync(userId);
+    }
+
+    public async Task<bool> AddFavoriteAsync(int userId, int propertyId)
+    {
+        return await _favoriteRepo.AddAsync(userId, propertyId);
+    }
+
+    public async Task<bool> RemoveFavoriteAsync(int userId, int propertyId)
+    {
+        return await _favoriteRepo.RemoveAsync(userId, propertyId);
+    }
+
+    public async Task<bool> IsFavoriteAsync(int userId, int propertyId)
+    {
+        return await _favoriteRepo.IsFavoriteAsync(userId, propertyId);
+    }
+}
+
