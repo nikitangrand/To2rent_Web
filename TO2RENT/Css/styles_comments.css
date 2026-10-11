@@ -46,7 +46,7 @@
   background-color: #C4C4C4;
   border-left: 5px solid #888888;
   padding: 24px;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .stars {
@@ -77,7 +77,7 @@
 .review-form {
   background: #C4C4C4;
   padding: 30px;
-  border-radius: 8px;
+  border-radius: 0;
 }
 .review-form h2 {
   color: #333333;
@@ -95,7 +95,7 @@
   padding: 12px;
   margin-bottom: 20px;
   border: 1px solid #C4C4C4;
-  border-radius: 4px;
+  border-radius: 0;
   font-family: inherit;
 }
 .review-form textarea {
@@ -103,7 +103,7 @@
   padding: 12px;
   margin-bottom: 20px;
   border: 1px solid #C4C4C4;
-  border-radius: 4px;
+  border-radius: 0;
   font-family: inherit;
   resize: vertical;
   min-height: 120px;

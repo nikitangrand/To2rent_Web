@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initManagerModal();
     initAuthModal();
     renderAuthNavbar();
+    initMobileNav();
     bindGlobalButtons();
     bindSearchForm();
     bindFooterForms();
@@ -105,6 +106,61 @@ function renderAuthNavbar() {
         document.getElementById('navLoginBtn')?.addEventListener('click', () => openAuthModal('login'));
         document.getElementById('navRegBtn')?.addEventListener('click', () => openAuthModal('register'));
     }
+}
+
+function initMobileNav() {
+    const header = document.querySelector('.header');
+    const nav = document.querySelector('.main-nav');
+    if (!header || !nav) return;
+
+    let toggleBtn = header.querySelector('.nav-toggle-btn');
+    if (!toggleBtn) {
+        toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'nav-toggle-btn';
+        toggleBtn.setAttribute('aria-label', 'Навигационное меню');
+        toggleBtn.innerHTML = `
+            <span class="nav-toggle-icon"><span></span></span>
+            <span class="nav-toggle-text">Меню</span>
+        `;
+        header.appendChild(toggleBtn);
+    }
+
+    const textSpan = toggleBtn.querySelector('.nav-toggle-text');
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = nav.classList.toggle('is-open');
+        toggleBtn.classList.toggle('active', isOpen);
+        if (textSpan) textSpan.textContent = isOpen ? 'Закрыть' : 'Меню';
+    });
+
+    // Close on nav link click
+    nav.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            nav.classList.remove('is-open');
+            toggleBtn.classList.remove('active');
+            if (textSpan) textSpan.textContent = 'Меню';
+        });
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!nav.contains(e.target) && !toggleBtn.contains(e.target) && nav.classList.contains('is-open')) {
+            nav.classList.remove('is-open');
+            toggleBtn.classList.remove('active');
+            if (textSpan) textSpan.textContent = 'Меню';
+        }
+    });
+
+    // Reset when resizing to desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024 && nav.classList.contains('is-open')) {
+            nav.classList.remove('is-open');
+            toggleBtn.classList.remove('active');
+            if (textSpan) textSpan.textContent = 'Меню';
+        }
+    });
 }
 
 // ==========================================================================
