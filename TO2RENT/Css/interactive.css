@@ -7,9 +7,34 @@
   --border-color: #dcdcdc;
   --text-main: #2b2b2b;
   --text-muted: #666666;
-  --radius-lg: 16px;
-  --radius-md: 10px;
-  --radius-sm: 4px;
+  --radius-lg: 0px;
+  --radius-md: 0px;
+  --radius-sm: 0px;
+}
+
+/* ==========================================================================
+   Universal Button Architecture: Non-rounded corners & Roboto Condensed font
+   ========================================================================== */
+button,
+.btn,
+.modal-submit-btn,
+.btn-nav-auth,
+.btn-nav-logout,
+.btn-filter-reset,
+.btn-add-property,
+.btn-sm-action,
+.btn-tag-filter,
+.auth-tab-btn,
+.admin-tab-btn,
+.search-btn,
+.btn--appart,
+.btn--description,
+.submit-btn,
+.modal-close-btn,
+input[type="button"],
+input[type="submit"] {
+  border-radius: 0 !important;
+  font-family: "Roboto Condensed", sans-serif !important;
 }
 
 /* ==========================================================================
@@ -152,7 +177,7 @@
   border: none;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 0;
   font-size: 20px;
   color: #333;
   cursor: pointer;
@@ -591,7 +616,7 @@ textarea.input-field {
 .badge {
   display: inline-block;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: 0;
   font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
@@ -718,7 +743,7 @@ textarea.input-field {
 .role-badge {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 3px;
+  border-radius: 0;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -872,7 +897,7 @@ textarea.input-field {
   padding: 6px 14px;
   background: #f4f4f4;
   border: 1px solid #dddddd;
-  border-radius: 20px;
+  border-radius: 0;
   font-size: 13px;
   font-weight: 600;
   color: #555555;

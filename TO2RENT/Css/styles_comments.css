@@ -114,7 +114,10 @@
   color: white;
   border: none;
   padding: 12px 30px;
-  border-radius: 4px;
+  border-radius: 0;
+  font-family: "Roboto Condensed", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.3s;
 }

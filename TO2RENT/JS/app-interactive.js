@@ -117,24 +117,17 @@ function initAuthModal() {
                 <button type="button" class="auth-tab-btn" id="authTabRegisterBtn">Регистрация</button>
             </div>
 
-            <!-- Hint for Demo Accounts -->
-            <div class="auth-hint-banner">
-                <strong>Тестовые учетные записи:</strong><br>
-                Администратор: <code>admin</code> / <code>admin123</code><br>
-                Клиент: <code>client</code> / <code>client123</code>
-            </div>
-
             <!-- LOGIN TAB FORM -->
             <form id="authLoginForm">
                 <div class="form-grid">
                     <div class="form-group-full">
                         <label class="input-label" for="loginUsername">Логин или Email *</label>
-                        <input type="text" id="loginUsername" class="input-field" placeholder="admin или client@mail.ru" required autocomplete="username">
+                        <input type="text" id="loginUsername" class="input-field" placeholder="Логин или email" required autocomplete="username">
                     </div>
 
                     <div class="form-group-full">
                         <label class="input-label" for="loginPassword">Пароль *</label>
-                        <input type="password" id="loginPassword" class="input-field" placeholder="••••••••" required autocomplete="current-password">
+                        <input type="password" id="loginPassword" class="input-field" placeholder="Введите пароль" required autocomplete="current-password">
                     </div>
                 </div>
 
@@ -146,17 +139,17 @@ function initAuthModal() {
                 <div class="form-grid">
                     <div>
                         <label class="input-label" for="regUsername">Логин *</label>
-                        <input type="text" id="regUsername" class="input-field" placeholder="alex_grand" required autocomplete="username">
+                        <input type="text" id="regUsername" class="input-field" placeholder="Придумайте логин" required autocomplete="username">
                     </div>
 
                     <div>
                         <label class="input-label" for="regEmail">Электронная почта *</label>
-                        <input type="email" id="regEmail" class="input-field" placeholder="alex@domain.ru" required autocomplete="email">
+                        <input type="email" id="regEmail" class="input-field" placeholder="example@mail.ru" required autocomplete="email">
                     </div>
 
                     <div>
                         <label class="input-label" for="regPassword">Пароль (мин. 6 симв.) *</label>
-                        <input type="password" id="regPassword" class="input-field" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+                        <input type="password" id="regPassword" class="input-field" placeholder="Минимум 6 символов" minlength="6" required autocomplete="new-password">
                     </div>
 
                     <div>
@@ -169,7 +162,7 @@ function initAuthModal() {
 
                     <div class="form-group-full">
                         <label class="input-label" for="regFullName">ФИО *</label>
-                        <input type="text" id="regFullName" class="input-field" placeholder="Алексей Громов" required>
+                        <input type="text" id="regFullName" class="input-field" placeholder="Иван Иванов" required>
                     </div>
 
                     <div class="form-group-full">
@@ -333,7 +326,7 @@ function initBookingModal() {
 
                     <div>
                         <label class="input-label" for="bookClientEmail">Электронная почта</label>
-                        <input type="email" id="bookClientEmail" class="input-field" placeholder="client@mail.ru">
+                        <input type="email" id="bookClientEmail" class="input-field" placeholder="example@mail.ru">
                     </div>
 
                     <div>
@@ -359,7 +352,7 @@ function initBookingModal() {
 
                     <div class="form-group-full">
                         <label class="input-label" for="bookNotes">Пожелания или комментарии</label>
-                        <textarea id="bookNotes" class="input-field" placeholder="Время прибытия, трансфер, детская кроватка..."></textarea>
+                        <textarea id="bookNotes" class="input-field" placeholder="Особые пожелания к бронированию..."></textarea>
                     </div>
                 </div>
 
@@ -537,17 +530,17 @@ function initManagerModal() {
                 <div class="form-grid">
                     <div class="form-group-full">
                         <label class="input-label" for="managerClientName">Ваше имя *</label>
-                        <input type="text" id="managerClientName" class="input-field" placeholder="Александр" required>
+                        <input type="text" id="managerClientName" class="input-field" placeholder="Иван Иванов" required>
                     </div>
 
                     <div class="form-group-full">
                         <label class="input-label" for="managerContactInfo">Телефон или Email *</label>
-                        <input type="text" id="managerContactInfo" class="input-field" placeholder="+7 (999) 123-45-67" required>
+                        <input type="text" id="managerContactInfo" class="input-field" placeholder="+7 (999) 000-00-00 или email" required>
                     </div>
 
                     <div class="form-group-full">
                         <label class="input-label" for="managerClientMessage">Вопрос или пожелание *</label>
-                        <textarea id="managerClientMessage" class="input-field" placeholder="Здравствуйте, интересует аренда апартаментов в Москве..." required></textarea>
+                        <textarea id="managerClientMessage" class="input-field" placeholder="Опишите ваш запрос или вопрос..." required></textarea>
                     </div>
                 </div>
 

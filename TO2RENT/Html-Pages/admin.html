@@ -30,22 +30,16 @@
     <div id="adminAuthGuard" class="admin-guard-container" style="display: none;">
         <h2>Доступ ограничен</h2>
         <p>Панель управления доступна только авторизованным пользователям с правами Администратора.</p>
-        
-        <div class="auth-hint-banner" style="text-align: left;">
-            <strong>Данные администратора:</strong><br>
-            Логин: <code>admin</code><br>
-            Пароль: <code>admin123</code>
-        </div>
 
         <form id="guardLoginForm">
             <div class="form-grid">
                 <div class="form-group-full">
                     <label class="input-label" for="guardUsername">Логин или Email *</label>
-                    <input type="text" id="guardUsername" class="input-field" value="admin" required autocomplete="username">
+                    <input type="text" id="guardUsername" class="input-field" placeholder="Логин или email" required autocomplete="username">
                 </div>
                 <div class="form-group-full">
                     <label class="input-label" for="guardPassword">Пароль *</label>
-                    <input type="password" id="guardPassword" class="input-field" value="admin123" required autocomplete="current-password">
+                    <input type="password" id="guardPassword" class="input-field" placeholder="Пароль" required autocomplete="current-password">
                 </div>
             </div>
             <button type="submit" class="modal-submit-btn" id="guardSubmitBtn" style="margin-top: 16px;">Войти как администратор</button>
@@ -269,7 +263,7 @@
                 <div class="form-grid">
                     <div>
                         <label class="input-label" for="propTitle">Название объекта *</label>
-                        <input type="text" id="propTitle" class="input-field" placeholder="Апартаменты Тверская" required>
+                        <input type="text" id="propTitle" class="input-field" placeholder="Например, Апартаменты Тверская" required>
                     </div>
 
                     <div>
@@ -282,47 +276,47 @@
 
                     <div>
                         <label class="input-label" for="propCity">Город *</label>
-                        <input type="text" id="propCity" class="input-field" placeholder="Москва" required>
+                        <input type="text" id="propCity" class="input-field" placeholder="Например, Москва" required>
                     </div>
 
                     <div>
                         <label class="input-label" for="propPrice">Стоимость ($) *</label>
-                        <input type="number" id="propPrice" class="input-field" placeholder="150000" required>
+                        <input type="number" id="propPrice" class="input-field" placeholder="Стоимость в $" required>
                     </div>
 
                     <div>
                         <label class="input-label" for="propRooms">Количество комнат / спален</label>
-                        <input type="number" id="propRooms" class="input-field" value="2">
+                        <input type="number" id="propRooms" class="input-field" placeholder="Количество комнат (например, 2)">
                     </div>
 
                     <div>
                         <label class="input-label" for="propArea">Площадь (м²)</label>
-                        <input type="number" id="propArea" class="input-field" value="65">
+                        <input type="number" id="propArea" class="input-field" placeholder="Площадь в м² (например, 65)">
                     </div>
 
                     <div>
                         <label class="input-label" for="propFloors">Количество этажей (для домов)</label>
-                        <input type="number" id="propFloors" class="input-field" placeholder="2">
+                        <input type="number" id="propFloors" class="input-field" placeholder="Количество этажей (например, 2)">
                     </div>
 
                     <div>
                         <label class="input-label" for="propLandArea">Площадь участка (м²)</label>
-                        <input type="number" id="propLandArea" class="input-field" placeholder="300">
+                        <input type="number" id="propLandArea" class="input-field" placeholder="Площадь участка в м² (например, 300)">
                     </div>
 
                     <div class="form-group-full">
                         <label class="input-label" for="propImage">Путь к изображению</label>
-                        <input type="text" id="propImage" class="input-field" placeholder="Images/Modern_house.jpg" value="Images/Modern_house.jpg">
+                        <input type="text" id="propImage" class="input-field" placeholder="Путь к фото (например, Images/Modern_house.jpg)" value="Images/Modern_house.jpg">
                     </div>
 
                     <div class="form-group-full">
                         <label class="input-label" for="propDesc">Краткое описание *</label>
-                        <input type="text" id="propDesc" class="input-field" placeholder="Светлая квартира с ремонтом в центре города" required>
+                        <input type="text" id="propDesc" class="input-field" placeholder="Краткое описание для карточки объекта" required>
                     </div>
 
                     <div class="form-group-full">
                         <label class="input-label" for="propFullDesc">Полное описание и особенности</label>
-                        <textarea id="propFullDesc" class="input-field" placeholder="Подробные характеристики объекта, отделка, инфраструктура..."></textarea>
+                        <textarea id="propFullDesc" class="input-field" placeholder="Подробные характеристики объекта, отделка, инфраструктура и планировка"></textarea>
                     </div>
                 </div>
 

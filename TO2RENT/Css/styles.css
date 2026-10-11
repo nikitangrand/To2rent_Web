@@ -61,14 +61,29 @@ h4 {
   color: white;
 }
 
+button,
+.btn,
+.btn--small,
+.btn--highlight,
+.btn--contact,
+.search-btn,
+.slider-arrow,
+.btn--appart,
+.btn--description {
+  border-radius: 0 !important;
+  font-family: "Roboto Condensed", sans-serif !important;
+}
+
 .btn {
   display: inline-block;
   padding: 16px 40px;
   background-color: #C4C4C4;
   color: white;
   border: none;
+  border-radius: 0;
   cursor: pointer;
   font-size: 18px;
+  font-family: "Roboto Condensed", sans-serif;
   transition: all 0.3s ease;
   text-align: center;
 }
