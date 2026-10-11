@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using Backend.Application.Interfaces;
 using Backend.Application.Services;
 using Backend.Data;
@@ -10,20 +11,46 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // ============================================================================
-// 1. Database Configuration (PostgreSQL / SQLite)
+// 1. Resilient Database Configuration (PostgreSQL with SQLite fallback)
 // ============================================================================
 var dbProvider = builder.Configuration["DatabaseProvider"] ?? "PostgreSQL";
 var pgConn = builder.Configuration.GetConnectionString("PostgreSql");
-var sqliteConn = builder.Configuration.GetConnectionString("Sqlite")
-    ?? $"Data Source={Path.Combine(builder.Environment.ContentRootPath, "to2rent.db")}";
+var sqliteDbPath = Path.Combine(builder.Environment.ContentRootPath, "to2rent.db");
+var sqliteConn = $"Data Source={sqliteDbPath}";
 
+bool usePostgres = false;
 if (dbProvider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(pgConn))
 {
+    try
+    {
+        // Test PostgreSQL connection availability
+        var builderPg = new Npgsql.NpgsqlConnectionStringBuilder(pgConn);
+        var host = builderPg.Host ?? "localhost";
+        using var tcp = new TcpClient();
+        var connectTask = tcp.ConnectAsync(host, builderPg.Port);
+        if (Task.WhenAny(connectTask, Task.Delay(1000)).GetAwaiter().GetResult() == connectTask && tcp.Connected)
+        {
+            using var conn = new Npgsql.NpgsqlConnection(pgConn);
+            conn.Open();
+            usePostgres = true;
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Database] PostgreSQL недоступен ({ex.Message}). Переключение на локальную SQLite базу данных.");
+        usePostgres = false;
+    }
+}
+
+if (usePostgres)
+{
+    Console.WriteLine("[Database] Подключена база данных PostgreSQL.");
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(pgConn));
 }
 else
 {
+    Console.WriteLine("[Database] Подключена локальная база данных SQLite.");
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite(sqliteConn));
 }
@@ -49,7 +76,7 @@ builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafk
 builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 builder.Services.AddHostedService<KafkaBookingAuditConsumer>();
 
-// Controllers & JSON Serializer
+// Controllers & JSON Settings
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -76,7 +103,7 @@ var app = builder.Build();
 app.MapOpenApi();
 app.MapScalarApiReference(options =>
 {
-    options.WithTitle("TO2RENT Microservice API (PostgreSQL + Kafka)")
+    options.WithTitle("TO2RENT Microservice API")
            .WithTheme(ScalarTheme.Moon);
 });
 
@@ -108,7 +135,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Database Initialization & Seed
+// Database Initialization & Seed Data
 using (var scope = app.Services.CreateScope())
 {
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
@@ -120,8 +147,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogWarning("Не удалось подключиться к базе данных {Provider}: {Msg}", dbContext.Database.ProviderName, ex.Message);
-        logger.LogInformation("При использовании Docker запустите: docker compose up -d");
+        logger.LogWarning("Ошибка инициализации базы данных: {Msg}", ex.Message);
     }
 }
 

@@ -117,16 +117,22 @@ h4 {
   justify-content: center;
   border-top: 1px solid #C4C4C4;
   border-bottom: 1px solid #C4C4C4;
+  background-color: #FFFFFF;
+  flex-wrap: wrap;
 }
 
 .nav-link {
-  padding: 30px 66px;
+  padding: 20px clamp(16px, 2.5vw, 48px);
   text-align: center;
   color: #333333;
-  font-size: 20px;
+  font-size: 18px;
   border-left: 1px solid #C4C4C4;
   border-right: 1px solid #C4C4C4;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 .nav-link:hover {
   background-color: #000000;

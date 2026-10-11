@@ -1,182 +1,165 @@
+/* TO2RENT - Property Details Page Styles (Clean & Responsive) */
+
 :root {
     --primary-color: #000000;
-    --secondary-color: #C4C4C4;
-    --text-color: #333333;
-    --light-text: #888888;
+    --secondary-color: #F4F4F4;
+    --text-color: #222222;
+    --light-text: #666666;
     --white: #FFFFFF;
-    --border-color: #C4C4C4;
+    --border-color: #D6D6D6;
 }
 
-/* Базовые стили карточки */
 .appart--card {
     background-color: var(--secondary-color);
-    border-radius: 20px;
+    border-radius: 16px;
     width: 95%;
-    margin: 20px auto;
-    padding: 20px;
+    max-width: 1300px;
+    margin: 30px auto;
+    padding: 36px;
     box-sizing: border-box;
+    border: 1px solid var(--border-color);
+    min-height: auto;
     position: relative;
-    min-height: 600px;
 }
 
 .appart--card h2 {
-    text-align: center;
-    font-size: clamp(24px, 5vw, 50px);
-    color: var(--text-color);
-    line-height: 0.3;
+    text-align: left;
+    font-size: clamp(24px, 3.2vw, 38px);
+    color: var(--primary-color);
+    margin-bottom: 24px;
+    font-family: "PT Serif", serif;
+    font-weight: 700;
+    line-height: 1.2;
 }
 
-/* Мобильная версия (по умолчанию) */
 .card-content {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 36px;
+    align-items: start;
+    margin-bottom: 24px;
 }
 
-.card-image {
+.card-content .card-image {
+    grid-column: 1;
+    grid-row: 1;
     width: 100%;
-    height: auto;
-    border-radius: 20px;
-    box-shadow: 10px 5px 5px var(--light-text);
-    object-fit: fill;
-    margin: 15px 0px;
+    height: 420px;
+    border-radius: 14px;
+    object-fit: cover;
+    display: block;
+    margin: 0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transition: opacity 0.3s ease;
 }
 
-.thumbnails-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+.card-content .thumbnails-container {
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
     gap: 8px;
-    margin-bottom: 10px;
+    margin-top: 10px;
 }
 
 .thumbnail {
-    width: calc(33.33% - 6px);
+    width: 100%;
     height: 70px;
-    border-radius: 8px;
+    border-radius: 6px;
     object-fit: cover;
     cursor: pointer;
     border: 2px solid transparent;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
-.card-info {
-    text-align: center;
-    margin-bottom: 15px;
-}
-
-.price {
-    font-size: 22px;
-    font-weight: bold;
-    margin: 20px 50px;
-}
-
-.description {
-    font-size: 16px;
-    line-height: 1.5;
-    color: var(--text-color);
-}
-
-.btn--appart {
-    
-    width: 100%;
-    max-width: 250px;
-    height: 50px;
-    margin: 0 auto;
-    background-color: var(--primary-color);
-    color: var(--white);
-    border: none;
-    margin: 0 80px;
-    border-radius: 10px;
-    font-size: 20px;
-    cursor: pointer;
-}
-
-/* Общие стили для всех устройств */
 .thumbnail:hover {
-    transform: scale(1.05);
+    border-color: #555555;
+    transform: translateY(-2px);
 }
 
 .thumbnail.active {
     border-color: var(--primary-color);
-    transform: scale(1.05);
+    box-shadow: 0 0 0 1px #000;
+}
+
+.card-content .card-info {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    padding-left: 10px;
+}
+
+.card-info .price {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 16px;
+    font-family: "PT Serif", serif;
+}
+
+.card-info .description {
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--text-color);
+}
+
+.btn--appart {
+    display: block;
+    padding: 14px 40px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: 1px solid var(--primary-color);
+    border-radius: 4px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: center;
+    max-width: 280px;
+    margin-top: 10px;
 }
 
 .btn--appart:hover {
-    background-color: #333;
+    background-color: var(--white);
+    color: var(--primary-color);
 }
 
-/* ПК версия (1024px и больше) */
-@media (min-width: 1024px) {
-    .appart--card {
-        height: 850px;
-        padding: 40px;
-    }
-
+@media (max-width: 992px) {
     .card-content {
-        display: block;
+        grid-template-columns: 1fr;
     }
 
-    .card-image {
-        width: 1000px;
-        height: 500px;
-        position: absolute;
-        top: 100px;
-        left: 400px;
-        margin: 0;
+    .card-content .card-image {
+        grid-column: 1;
+        grid-row: 1;
+        height: 320px;
     }
 
-    .thumbnails-container {
-        width: 1000px;
-        position: absolute;
-        top: 620px;
-        left: 400px;
-        justify-content: space-between;
-        gap: 0;
+    .card-content .thumbnails-container {
+        grid-column: 1;
+        grid-row: 2;
     }
 
-    .thumbnail {
-        width: 150px;
-        height: 100px;
-    }
-
-    .card-info {
-        position: absolute;
-        top: 70px;
-        left: 50px;
-        width: 300px;
-        text-align: left;
-    }
-
-    .price {
-        font-size: 28px;
-    }
-
-    .description {
-        font-size: 18px;
+    .card-content .card-info {
+        grid-column: 1;
+        grid-row: 3;
+        padding-left: 0;
+        margin-top: 14px;
     }
 
     .btn--appart {
-        position: absolute;
-        bottom: 30px;
-        left: 50px;
-        width: 300px;
-        height: 70px;
-        font-size: 22px;
-        margin: 0;
+        width: 100%;
+        max-width: 100%;
     }
 }
 
-/* Планшетная версия (768px-1023px) */
-@media (min-width: 768px) and (max-width: 1023px) {
-    .card-image {
-        height: 400px;
+@media (max-width: 600px) {
+    .card-content .thumbnails-container {
+        grid-template-columns: repeat(3, 1fr);
     }
-
     .thumbnail {
-        height: 90px;
-    }
-
-    .price {
-        font-size: 24px;
+        height: 60px;
     }
 }

@@ -1,4 +1,4 @@
-// JS/comments.js - Dynamic Reviews Loader & Submitter
+// JS/comments.js - Dynamic Reviews Loader & Submitter (Clean & No Emojis)
 
 document.addEventListener('DOMContentLoaded', () => {
     loadReviews();
@@ -15,7 +15,7 @@ async function loadReviews() {
             renderReviewsList(reviews, listEl);
         }
     } catch (err) {
-        console.warn('API отзывов недоступен, остаются предустановленные отзывы:', err);
+        console.warn('API отзывов недоступен:', err);
     }
 }
 
@@ -24,12 +24,11 @@ function renderReviewsList(reviews, listEl) {
     reviews.forEach(review => {
         const li = document.createElement('li');
         li.className = 'review';
-        
-        const starsText = getStarRating(review.rating);
+
         const dateStr = formatDateRussian(review.createdAt);
 
         li.innerHTML = `
-            <div class="stars">${starsText}</div>
+            <div class="stars">Оценка: ${review.rating} из 5</div>
             <div class="review-header">
                 <span class="author">${escapeHtml(review.author)}</span>
                 <span class="date">${dateStr}</span>
@@ -58,7 +57,7 @@ function bindReviewForm() {
         const comment = (commentInput?.value || '').trim();
 
         if (!author) {
-            showToast('Внимание', 'Пожалуйста, укажите ваше имя', 'error');
+            showToast('Внимание', 'Укажите ваше имя', 'error');
             return;
         }
 
@@ -68,7 +67,7 @@ function bindReviewForm() {
         }
 
         if (!comment) {
-            showToast('Внимание', 'Пожалуйста, напишите текст отзыва', 'error');
+            showToast('Внимание', 'Напишите текст отзыва', 'error');
             return;
         }
 
@@ -82,14 +81,12 @@ function bindReviewForm() {
                 comment
             });
 
-            // Prepend new review to the list immediately
             const listEl = document.querySelector('.review-list');
             if (listEl) {
                 const li = document.createElement('li');
                 li.className = 'review';
-                li.style.animation = 'fadeIn 0.5s ease';
                 li.innerHTML = `
-                    <div class="stars">${getStarRating(newReview.rating)}</div>
+                    <div class="stars">Оценка: ${newReview.rating} из 5</div>
                     <div class="review-header">
                         <span class="author">${escapeHtml(newReview.author)}</span>
                         <span class="date">${formatDateRussian(newReview.createdAt)}</span>
@@ -100,7 +97,7 @@ function bindReviewForm() {
             }
 
             form.reset();
-            showToast('Спасибо за отзыв!', 'Ваш отзыв успешно опубликован и добавлен в базу.', 'success');
+            showToast('Спасибо за отзыв', 'Отзыв опубликован и добавлен в базу данных.', 'success');
         } catch (err) {
             showToast('Ошибка публикации', err.message || 'Не удалось опубликовать отзыв', 'error');
         } finally {
@@ -108,11 +105,6 @@ function bindReviewForm() {
             submitBtn.textContent = 'Отправить';
         }
     });
-}
-
-function getStarRating(rating) {
-    const r = Math.max(1, Math.min(5, Math.round(rating || 5)));
-    return '★'.repeat(r) + '☆'.repeat(5 - r);
 }
 
 function formatDateRussian(isoString) {

@@ -1,4 +1,4 @@
-// TO2RENT Global Interactive Features (Modals, Toasts, Forms, Bookings)
+// TO2RENT Global Interactive Features (Modals, Toasts, Forms, Bookings) - Clean & No Emojis
 
 document.addEventListener('DOMContentLoaded', () => {
     initToastContainer();
@@ -7,11 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
     bindGlobalButtons();
     bindSearchForm();
     bindFooterForms();
-    injectAdminNavLink();
+    highlightCurrentNavLink();
 });
 
 // ==========================================================================
-// Toast Notifications
+// Toast Notifications (Zero Emojis)
 // ==========================================================================
 let toastContainer = null;
 
@@ -25,18 +25,13 @@ function initToastContainer() {
     }
 }
 
-function showToast(title, message, type = 'info', duration = 4500) {
+function showToast(title, message, type = 'info', duration = 4000) {
     if (!toastContainer) initToastContainer();
 
     const toast = document.createElement('div');
     toast.className = `toast toast--${type}`;
 
-    let icon = 'ℹ️';
-    if (type === 'success') icon = '✅';
-    if (type === 'error') icon = '❌';
-
     toast.innerHTML = `
-        <div class="toast-icon">${icon}</div>
         <div class="toast-body">
             <div class="toast-title">${escapeHtml(title)}</div>
             <div class="toast-message">${escapeHtml(message)}</div>
@@ -47,7 +42,7 @@ function showToast(title, message, type = 'info', duration = 4500) {
     const closeBtn = toast.querySelector('.toast-close');
     const dismiss = () => {
         toast.classList.add('toast-hiding');
-        setTimeout(() => toast.remove(), 300);
+        setTimeout(() => toast.remove(), 250);
     };
 
     closeBtn.addEventListener('click', dismiss);
@@ -84,7 +79,7 @@ function initBookingModal() {
                 <div class="form-grid">
                     <div class="form-group-full">
                         <label class="input-label" for="bookClientName">Ваше имя и фамилия *</label>
-                        <input type="text" id="bookClientName" class="input-field" placeholder="Константин Смирнов" required>
+                        <input type="text" id="bookClientName" class="input-field" placeholder="Иван Иванов" required>
                     </div>
 
                     <div>
@@ -94,7 +89,7 @@ function initBookingModal() {
 
                     <div>
                         <label class="input-label" for="bookClientEmail">Электронная почта</label>
-                        <input type="email" id="bookClientEmail" class="input-field" placeholder="example@mail.ru">
+                        <input type="email" id="bookClientEmail" class="input-field" placeholder="client@mail.ru">
                     </div>
 
                     <div>
@@ -126,8 +121,8 @@ function initBookingModal() {
 
                 <div class="price-summary-box">
                     <div>
-                        <div class="price-summary-label">Расчетная стоимость проживания:</div>
-                        <small id="bookingDaysCount" style="color: #777;">За 7 ночей</small>
+                        <div class="price-summary-label">Расчетная стоимость:</div>
+                        <small id="bookingDaysCount" style="color: #666;">За 7 ночей</small>
                     </div>
                     <div class="price-summary-value" id="bookingTotalPrice">0 $</div>
                 </div>
@@ -147,13 +142,11 @@ function initBookingModal() {
         if (e.target === bookingModal) closeBookingModal();
     });
 
-    // Date changes recalculate total price
     const inInput = document.getElementById('bookCheckIn');
     const outInput = document.getElementById('bookCheckOut');
     inInput.addEventListener('change', updateBookingPriceCalculation);
     outInput.addEventListener('change', updateBookingPriceCalculation);
 
-    // Form submit
     const form = document.getElementById('bookingForm');
     form.addEventListener('submit', handleBookingSubmit);
 }
@@ -176,7 +169,6 @@ function openBookingModal(property = {}) {
         preview.style.display = 'none';
     }
 
-    // Default dates: tomorrow to +7 days
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
@@ -215,9 +207,8 @@ function updateBookingPriceCalculation() {
 
     daysEl.textContent = `За ${days} ${getDaysPlural(days)}`;
 
-    let baseRate = 350; // default per night
+    let baseRate = 350;
     if (currentBookingProperty && currentBookingProperty.price) {
-        // Approximate night rate based on property monthly/base rate
         baseRate = Math.max(150, Math.round(currentBookingProperty.price / 30));
     }
 
@@ -259,14 +250,14 @@ async function handleBookingSubmit(e) {
         const result = await To2RentApi.createBooking(payload);
         closeBookingModal();
         showToast(
-            'Бронирование принято!',
-            `Ваша заявка #${result.id} успешно зарегистрирована. Менеджер свяжется с вами по телефону ${clientPhone} в течение 15 минут.`,
+            'Бронирование принято',
+            `Заявка #${result.id} зарегистрирована. Менеджер свяжется с вами по номеру ${clientPhone}.`,
             'success',
-            6000
+            5000
         );
         document.getElementById('bookingForm').reset();
     } catch (err) {
-        showToast('Ошибка оформления', err.message || 'Не удалось отправить заявку. Попробуйте еще раз.', 'error');
+        showToast('Ошибка оформления', err.message || 'Не удалось отправить заявку.', 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Подтвердить бронирование';
@@ -298,12 +289,12 @@ function initManagerModal() {
 
                     <div class="form-group-full">
                         <label class="input-label" for="managerContactInfo">Телефон или Email *</label>
-                        <input type="text" id="managerContactInfo" class="input-field" placeholder="+7 (999) 123-45-67 или email@domain.ru" required>
+                        <input type="text" id="managerContactInfo" class="input-field" placeholder="+7 (999) 123-45-67" required>
                     </div>
 
                     <div class="form-group-full">
                         <label class="input-label" for="managerClientMessage">Вопрос или пожелание *</label>
-                        <textarea id="managerClientMessage" class="input-field" placeholder="Здравствуйте, интересует аренда апартаментов в Москве на 2 месяца..." required></textarea>
+                        <textarea id="managerClientMessage" class="input-field" placeholder="Здравствуйте, интересует аренда апартаментов в Москве..." required></textarea>
                     </div>
                 </div>
 
@@ -357,7 +348,7 @@ async function handleManagerSubmit(e) {
             targetManager: currentManagerName
         });
         closeManagerModal();
-        showToast('Запрос отправлен', `Менеджер ${currentManagerName} свяжется с вами в ближайшее время!`, 'success');
+        showToast('Запрос отправлен', `Менеджер ${currentManagerName} свяжется с вами в ближайшее время.`, 'success');
         document.getElementById('managerForm').reset();
     } catch (err) {
         showToast('Ошибка', err.message || 'Не удалось отправить запрос', 'error');
@@ -371,7 +362,6 @@ async function handleManagerSubmit(e) {
 // Button Bindings
 // ==========================================================================
 function bindGlobalButtons() {
-    // 1. Highlight property booking button on index.html
     const highlightBookBtn = document.querySelector('.btn--highlight');
     if (highlightBookBtn) {
         highlightBookBtn.addEventListener('click', (e) => {
@@ -387,7 +377,6 @@ function bindGlobalButtons() {
         });
     }
 
-    // 2. Manager contact buttons on index.html
     document.querySelectorAll('.manager').forEach(managerEl => {
         const btn = managerEl.querySelector('.btn--small');
         const info = managerEl.querySelector('.manager-info')?.textContent || 'Менеджер';
@@ -400,12 +389,10 @@ function bindGlobalButtons() {
         }
     });
 
-    // 3. Any booking buttons on detail pages or cards
     document.body.addEventListener('click', (e) => {
         const target = e.target.closest('.btn--appart');
         if (!target) return;
 
-        // Check if inside a card
         const card = target.closest('.appart--card');
         if (card) {
             e.preventDefault();
@@ -424,9 +411,6 @@ function bindGlobalButtons() {
     });
 }
 
-// ==========================================================================
-// Home Search Input Binding
-// ==========================================================================
 function bindSearchForm() {
     const searchForm = document.querySelector('.search-form');
     if (!searchForm) return;
@@ -437,11 +421,10 @@ function bindSearchForm() {
     const handleSearch = () => {
         const query = (input?.value || '').trim();
         if (!query) {
-            showToast('Поиск', 'Пожалуйста, введите название города для поиска', 'info');
+            showToast('Поиск', 'Введите название города для поиска', 'info');
             return;
         }
 
-        // Determine destination path based on current location
         const isInHtmlPages = window.location.pathname.includes('/Html-Pages/');
         const targetPage = isInHtmlPages ? 'apartments.html' : 'Html-Pages/apartments.html';
         window.location.href = `${targetPage}?search=${encodeURIComponent(query)}`;
@@ -458,9 +441,6 @@ function bindSearchForm() {
     }
 }
 
-// ==========================================================================
-// Footer Contact Form Binding
-// ==========================================================================
 function bindFooterForms() {
     document.querySelectorAll('.contact-form').forEach(formEl => {
         const input = formEl.querySelector('.form-input');
@@ -469,7 +449,7 @@ function bindFooterForms() {
         const submitQuestion = async () => {
             const message = (input?.value || '').trim();
             if (!message) {
-                showToast('Внимание', 'Пожалуйста, введите ваш вопрос или сообщение', 'info');
+                showToast('Внимание', 'Введите ваш вопрос или сообщение', 'info');
                 return;
             }
 
@@ -485,7 +465,7 @@ function bindFooterForms() {
                 });
 
                 input.value = '';
-                showToast('Спасибо за обращение!', 'Ваш вопрос передан нашим специалистам. Мы свяжемся с вами в ближайшее время.', 'success');
+                showToast('Сообщение отправлено', 'Вопрос передан сотрудникам. Мы свяжемся с вами в ближайшее время.', 'success');
             } catch (err) {
                 showToast('Ошибка', err.message || 'Не удалось отправить вопрос', 'error');
             } finally {
@@ -506,30 +486,16 @@ function bindFooterForms() {
     });
 }
 
-// ==========================================================================
-// Admin Navigation Button Injection
-// ==========================================================================
-function injectAdminNavLink() {
-    const nav = document.querySelector('.main-nav');
-    if (!nav) return;
-
-    if (nav.querySelector('.admin-nav-link')) return;
-
-    const isInHtmlPages = window.location.pathname.includes('/Html-Pages/');
-    const adminUrl = isInHtmlPages ? 'admin.html' : 'Html-Pages/admin.html';
-
-    const adminLink = document.createElement('a');
-    adminLink.href = adminUrl;
-    adminLink.className = 'admin-nav-link';
-    adminLink.innerHTML = `<span class="admin-badge-dot"></span> Админка`;
-    adminLink.title = 'Панель управления заказами и каталогом';
-
-    nav.appendChild(adminLink);
+function highlightCurrentNavLink() {
+    const current = window.location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.nav-link').forEach(link => {
+        const href = link.getAttribute('href')?.split('/').pop();
+        if (href === current) {
+            link.classList.add('active');
+        }
+    });
 }
 
-// ==========================================================================
-// Utility Helpers
-// ==========================================================================
 function formatNumber(num) {
     return Number(num || 0).toLocaleString('ru-RU');
 }

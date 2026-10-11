@@ -1,4 +1,4 @@
-// JS/admin.js - Control Center Operations
+// TO2RENT Control Center (Clean Typography & Zero Emojis)
 
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
@@ -38,14 +38,14 @@ async function loadKpis() {
         const stats = await To2RentApi.getStats();
         document.getElementById('kpiProperties').textContent = stats.totalProperties || 0;
         document.getElementById('kpiPropsBreakdown').textContent = `${stats.totalApartments || 0} квартир, ${stats.totalHouses || 0} домов`;
-        
+
         document.getElementById('kpiBookings').textContent = stats.totalBookings || 0;
         document.getElementById('kpiBookingsPending').textContent = `${stats.pendingBookings || 0} ожидают подтверждения`;
-        
+
         document.getElementById('kpiRevenue').textContent = `${formatNumber(stats.totalRevenue || 0)} $`;
         document.getElementById('kpiInquiries').textContent = stats.totalInquiries || 0;
-        
-        document.getElementById('kpiRating').textContent = `${stats.averageRating || 5.0} ★`;
+
+        document.getElementById('kpiRating').textContent = `${stats.averageRating || 5.0} / 5.0`;
         document.getElementById('kpiReviewsCount').textContent = `${stats.totalReviews || 0} отзывов`;
 
         document.getElementById('tabCountBookings').textContent = stats.totalBookings || 0;
@@ -67,14 +67,14 @@ async function loadBookingsTable() {
     try {
         const bookings = await To2RentApi.getBookings();
         if (!bookings || bookings.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #888; padding: 30px;">Бронирований пока нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #888; padding: 24px;">Бронирований пока нет</td></tr>';
             return;
         }
 
         tbody.innerHTML = '';
         bookings.forEach(b => {
             const tr = document.createElement('tr');
-            
+
             const badgeClass = {
                 'Pending': 'badge--pending',
                 'Confirmed': 'badge--confirmed',
@@ -96,11 +96,11 @@ async function loadBookingsTable() {
                 <td><strong>#${b.id}</strong></td>
                 <td>
                     <div style="font-weight: 700;">${escapeHtml(b.clientName)}</div>
-                    ${b.notes ? `<small style="color: #666;">💬 ${escapeHtml(b.notes)}</small>` : ''}
+                    ${b.notes ? `<small style="color: #666;">${escapeHtml(b.notes)}</small>` : ''}
                 </td>
                 <td>
-                    <div>📞 <a href="tel:${b.clientPhone}">${escapeHtml(b.clientPhone)}</a></div>
-                    ${b.clientEmail ? `<small style="color: #666;">✉ ${escapeHtml(b.clientEmail)}</small>` : ''}
+                    <div>${escapeHtml(b.clientPhone)}</div>
+                    ${b.clientEmail ? `<small style="color: #666;">${escapeHtml(b.clientEmail)}</small>` : ''}
                 </td>
                 <td><strong>${escapeHtml(b.propertyTitle)}</strong></td>
                 <td>${inDate} — ${outDate}</td>
@@ -109,9 +109,9 @@ async function loadBookingsTable() {
                 <td><span class="badge ${badgeClass}">${statusText}</span></td>
                 <td>
                     <div class="btn-action-group">
-                        ${b.status !== 'Confirmed' ? `<button class="btn-sm-action btn-sm-action--success" onclick="changeBookingStatus(${b.id}, 'Confirmed')" title="Подтвердить">✓</button>` : ''}
-                        ${b.status !== 'Cancelled' ? `<button class="btn-sm-action btn-sm-action--danger" onclick="changeBookingStatus(${b.id}, 'Cancelled')" title="Отменить">✕</button>` : ''}
-                        <button class="btn-sm-action" onclick="deleteBookingItem(${b.id})" title="Удалить">🗑</button>
+                        ${b.status !== 'Confirmed' ? `<button class="btn-sm-action btn-sm-action--success" onclick="changeBookingStatus(${b.id}, 'Confirmed')">Подтвердить</button>` : ''}
+                        ${b.status !== 'Cancelled' ? `<button class="btn-sm-action btn-sm-action--danger" onclick="changeBookingStatus(${b.id}, 'Cancelled')">Отменить</button>` : ''}
+                        <button class="btn-sm-action" onclick="deleteBookingItem(${b.id})">Удалить</button>
                     </div>
                 </td>
             `;
@@ -126,7 +126,7 @@ async function loadBookingsTable() {
 async function changeBookingStatus(id, newStatus) {
     try {
         await To2RentApi.updateBookingStatus(id, newStatus);
-        showToast('Статус изменен', `Бронь #${id} обновлена на статус "${newStatus}"`, 'success');
+        showToast('Статус изменен', `Бронь #${id} обновлена`, 'success');
         await loadBookingsTable();
         await loadKpis();
     } catch (e) {
@@ -135,14 +135,14 @@ async function changeBookingStatus(id, newStatus) {
 }
 
 async function deleteBookingItem(id) {
-    if (!confirm(`Вы действительно хотите удалить бронь #${id}?`)) return;
+    if (!confirm(`Удалить бронь #${id}?`)) return;
     try {
         await To2RentApi.deleteBooking(id);
-        showToast('Удалено', `Бронь #${id} успешно удалена`, 'info');
+        showToast('Удалено', `Бронь #${id} удалена`, 'info');
         await loadBookingsTable();
         await loadKpis();
     } catch (e) {
-        showToast('Ошибка', e.message || 'Не удалось удалить запись', 'error');
+        showToast('Ошибка', e.message || 'Не удалось удалить', 'error');
     }
 }
 
@@ -156,7 +156,7 @@ async function loadInquiriesTable() {
     try {
         const inquiries = await To2RentApi.getInquiries();
         if (!inquiries || inquiries.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #888; padding: 30px;">Запросов пока нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #888; padding: 24px;">Запросов пока нет</td></tr>';
             return;
         }
 
@@ -170,15 +170,15 @@ async function loadInquiriesTable() {
                 <td><strong>${escapeHtml(item.name)}</strong></td>
                 <td>${escapeHtml(item.contactInfo)}</td>
                 <td style="max-width: 320px;">${escapeHtml(item.message)}</td>
-                <td><span style="font-weight: 600;">${escapeHtml(item.targetManager || 'Общий отдел')}</span></td>
+                <td>${escapeHtml(item.targetManager || 'Общий отдел')}</td>
                 <td>${formatDateShort(item.createdAt)}</td>
                 <td><span class="badge ${isNew ? 'badge--new' : 'badge--processed'}">${isNew ? 'Новый' : 'Обработан'}</span></td>
                 <td>
                     <div class="btn-action-group">
                         <button class="btn-sm-action ${isNew ? 'btn-sm-action--success' : ''}" onclick="toggleInquiryStatus(${item.id}, '${isNew ? 'Processed' : 'New'}')">
-                            ${isNew ? '✓ Обработать' : '↩ Вернуть'}
+                            ${isNew ? 'Обработать' : 'Вернуть'}
                         </button>
-                        <button class="btn-sm-action" onclick="deleteInquiryItem(${item.id})" title="Удалить">🗑</button>
+                        <button class="btn-sm-action" onclick="deleteInquiryItem(${item.id})">Удалить</button>
                     </div>
                 </td>
             `;
@@ -223,7 +223,7 @@ async function loadCatalogTable() {
     try {
         const properties = await To2RentApi.getProperties();
         if (!properties || properties.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 30px;">Объекты не найдены</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 24px;">Объекты не найдены</td></tr>';
             return;
         }
 
@@ -237,20 +237,20 @@ async function loadCatalogTable() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>#${p.id}</strong></td>
-                <td><img src="${imgPath}" alt="" style="width: 50px; height: 38px; border-radius: 4px; object-fit: cover;"></td>
+                <td><img src="${imgPath}" alt="" style="width: 50px; height: 38px; border-radius: 3px; object-fit: cover;"></td>
                 <td><strong>${escapeHtml(p.title)}</strong></td>
                 <td>${p.type === 'apartment' ? 'Квартира' : 'Дом / Коттедж'}</td>
                 <td>${escapeHtml(p.city)}</td>
                 <td><strong>${formatNumber(p.price)} $</strong></td>
                 <td>${p.rooms ? `${p.rooms} комн., ` : ''}${p.area} м²</td>
                 <td>
-                    ${p.isPopular ? '<span class="badge badge--pending" style="font-size: 10px;">ТОП</span> ' : ''}
-                    ${p.isFeatured ? '<span class="badge badge--confirmed" style="font-size: 10px;">ХИТ</span>' : ''}
+                    ${p.isPopular ? '<span class="badge badge--pending">ТОП</span> ' : ''}
+                    ${p.isFeatured ? '<span class="badge badge--confirmed">ХИТ</span>' : ''}
                 </td>
                 <td>
                     <div class="btn-action-group">
-                        <a href="${p.detailLink || '#'}" target="_blank" class="btn-sm-action" title="Просмотр">↗</a>
-                        <button class="btn-sm-action btn-sm-action--danger" onclick="deleteCatalogItem(${p.id}, '${escapeHtml(p.title)}')" title="Удалить">🗑</button>
+                        <a href="${p.detailLink || '#'}" target="_blank" class="btn-sm-action">Просмотр</a>
+                        <button class="btn-sm-action btn-sm-action--danger" onclick="deleteCatalogItem(${p.id}, '${escapeHtml(p.title)}')">Удалить</button>
                     </div>
                 </td>
             `;
@@ -263,10 +263,10 @@ async function loadCatalogTable() {
 }
 
 async function deleteCatalogItem(id, title) {
-    if (!confirm(`Удалить объект #${id} "${title}" из базы данных?`)) return;
+    if (!confirm(`Удалить объект "${title}"?`)) return;
     try {
         await To2RentApi.deleteProperty(id);
-        showToast('Удалено', `Объект "${title}" удален из базы`, 'info');
+        showToast('Удалено', `Объект "${title}" удален`, 'info');
         await loadCatalogTable();
         await loadKpis();
     } catch (e) {
@@ -274,7 +274,6 @@ async function deleteCatalogItem(id, title) {
     }
 }
 
-// Add Property Modal
 function initAddPropertyModal() {
     const modal = document.getElementById('addPropertyModalOverlay');
     const closeBtn = document.getElementById('addPropModalClose');
@@ -321,7 +320,7 @@ function initAddPropertyModal() {
             await To2RentApi.createProperty(payload);
             modal.classList.remove('active');
             form.reset();
-            showToast('Успех', `Объект "${title}" успешно добавлен в базу!`, 'success');
+            showToast('Успех', `Объект "${title}" добавлен в базу`, 'success');
             await loadCatalogTable();
             await loadKpis();
         } catch (err) {
@@ -344,7 +343,7 @@ async function loadReviewsTable() {
     try {
         const reviews = await To2RentApi.getReviews(false);
         if (!reviews || reviews.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">Отзывов нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 24px;">Отзывов нет</td></tr>';
             return;
         }
 
@@ -354,11 +353,11 @@ async function loadReviewsTable() {
             tr.innerHTML = `
                 <td><strong>#${r.id}</strong></td>
                 <td><strong>${escapeHtml(r.author)}</strong></td>
-                <td style="color: #f39c12; font-size: 16px;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</td>
+                <td style="font-weight: 700;">${r.rating} / 5</td>
                 <td style="max-width: 400px;">${escapeHtml(r.comment)}</td>
                 <td>${formatDateShort(r.createdAt)}</td>
                 <td>
-                    <button class="btn-sm-action btn-sm-action--danger" onclick="deleteReviewItem(${r.id})" title="Удалить отзыв">🗑</button>
+                    <button class="btn-sm-action btn-sm-action--danger" onclick="deleteReviewItem(${r.id})">Удалить</button>
                 </td>
             `;
 
@@ -381,9 +380,6 @@ async function deleteReviewItem(id) {
     }
 }
 
-// ==========================================================================
-// Date formatting helper
-// ==========================================================================
 function formatDateShort(iso) {
     if (!iso) return '-';
     try {
