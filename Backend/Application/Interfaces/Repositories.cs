@@ -31,6 +31,7 @@ public interface IReviewRepository
     Task<IEnumerable<Review>> GetAllAsync(bool onlyApproved = true);
     Task<Review?> GetByIdAsync(int id);
     Task<Review> AddAsync(Review review);
+    Task<Review> UpdateAsync(Review review);
     Task<bool> DeleteAsync(int id);
     Task<int> CountAsync();
     Task<double> GetAverageRatingAsync();
@@ -45,3 +46,13 @@ public interface IInquiryRepository
     Task<bool> DeleteAsync(int id);
     Task<int> CountAsync(string? status = null);
 }
+
+public interface IUserRepository
+{
+    Task<User?> GetByIdAsync(int id);
+    Task<User?> GetByUsernameOrEmailAsync(string identifier);
+    Task<bool> ExistsAsync(string username, string email);
+    Task<User> AddAsync(User user);
+    Task<IEnumerable<User>> GetAllAsync();
+}
+

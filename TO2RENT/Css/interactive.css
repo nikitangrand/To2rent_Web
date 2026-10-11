@@ -680,3 +680,247 @@ textarea.input-field {
   background: #fff;
   color: #000;
 }
+
+/* ==========================================================================
+   Navigation Auth Box & Role Badges
+   ========================================================================== */
+.nav-auth-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-left: 1px solid #C4C4C4;
+  margin-left: auto;
+  font-size: 14px;
+  background-color: #fafafa;
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 992px) {
+  .nav-auth-box {
+    width: 100%;
+    justify-content: center;
+    border-left: none;
+    border-top: 1px solid #dcdcdc;
+    margin-left: 0;
+  }
+}
+
+.user-greeting {
+  font-weight: 600;
+  color: #111;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-badge--admin {
+  background: #000000;
+  color: #ffffff;
+}
+
+.role-badge--client {
+  background: #e4e4e4;
+  color: #222222;
+  border: 1px solid #cccccc;
+}
+
+.btn-nav-auth {
+  padding: 8px 18px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #000000;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-nav-auth:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+.btn-nav-logout {
+  padding: 7px 14px;
+  background: #ffffff;
+  color: #111111;
+  border: 1px solid #cccccc;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-nav-logout:hover {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+/* ==========================================================================
+   Auth Modal & Tabs
+   ========================================================================== */
+.auth-tabs {
+  display: flex;
+  border-bottom: 2px solid #eeeeee;
+  margin-bottom: 22px;
+  gap: 20px;
+}
+
+.auth-tab-btn {
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: "Roboto Condensed", sans-serif;
+  color: #777777;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-tab-btn:hover {
+  color: #000000;
+}
+
+.auth-tab-btn.active {
+  color: #000000;
+  border-bottom-color: #000000;
+}
+
+.auth-hint-banner {
+  background: #fbfbfb;
+  border: 1px dashed #cccccc;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 12.5px;
+  color: #555555;
+  line-height: 1.5;
+}
+
+.auth-hint-banner strong {
+  color: #000000;
+}
+
+/* ==========================================================================
+   Admin Guard (Access Denied / Login Screen)
+   ========================================================================== */
+.admin-guard-container {
+  max-width: 480px;
+  margin: 60px auto;
+  background: #ffffff;
+  border: 1px solid #dcdcdc;
+  border-radius: var(--radius-sm);
+  padding: 36px 32px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  text-align: center;
+}
+
+.admin-guard-container h2 {
+  font-family: "PT Serif", serif;
+  font-size: 24px;
+  margin-bottom: 10px;
+  color: #000000;
+}
+
+.admin-guard-container p {
+  color: #666666;
+  font-size: 14.5px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   Admin Toolbars, Tags & Search
+   ========================================================================== */
+.admin-toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-tag-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-tag-filter {
+  padding: 6px 14px;
+  background: #f4f4f4;
+  border: 1px solid #dddddd;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-tag-filter:hover {
+  background: #e8e8e8;
+  color: #000000;
+}
+
+.btn-tag-filter.active {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.admin-search-box {
+  position: relative;
+  min-width: 260px;
+}
+
+.admin-search-box input {
+  width: 100%;
+  padding: 8px 14px;
+  border: 1px solid #cccccc;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.admin-search-box input:focus {
+  outline: none;
+  border-color: #000000;
+}
+
+.badge--approved {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.badge--hidden {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+

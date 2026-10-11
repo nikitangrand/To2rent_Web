@@ -84,3 +84,53 @@ public class CreateInquiryDto
 
     public string? TargetManager { get; set; }
 }
+
+public class UpdateReviewStatusDto
+{
+    public bool IsApproved { get; set; }
+}
+
+public class RegisterDto
+{
+    [Required]
+    public string Username { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [MinLength(6)]
+    public string Password { get; set; } = string.Empty;
+
+    public string FullName { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Role { get; set; } = "Client"; // "Client" by default
+}
+
+public class LoginDto
+{
+    [Required]
+    public string UsernameOrEmail { get; set; } = string.Empty;
+
+    [Required]
+    public string Password { get; set; } = string.Empty;
+}
+
+public class UserDto
+{
+    public int Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class AuthResponseDto
+{
+    public string Token { get; set; } = string.Empty;
+    public UserDto User { get; set; } = null!;
+}
+

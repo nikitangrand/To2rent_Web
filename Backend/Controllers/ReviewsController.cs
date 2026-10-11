@@ -33,6 +33,14 @@ public class ReviewsController : ControllerBase
         return CreatedAtAction(nameof(GetReviews), new { id = created.Id }, created);
     }
 
+    [HttpPatch("{id}/status")]
+    public async Task<ActionResult<Review>> UpdateStatus(int id, [FromBody] UpdateReviewStatusDto dto)
+    {
+        var updated = await _reviewService.ToggleApprovalAsync(id, dto.IsApproved);
+        if (updated == null) return NotFound(new { message = $"Отзыв #{id} не найден" });
+        return Ok(updated);
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteReview(int id)
     {

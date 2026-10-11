@@ -223,6 +223,13 @@ public class ReviewRepository : IReviewRepository
         return review;
     }
 
+    public async Task<Review> UpdateAsync(Review review)
+    {
+        _context.Reviews.Update(review);
+        await _context.SaveChangesAsync();
+        return review;
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var review = await _context.Reviews.FindAsync(id);
@@ -303,3 +310,46 @@ public class InquiryRepository : IInquiryRepository
         return await _context.Inquiries.CountAsync(i => i.Status.ToLower() == status.ToLower());
     }
 }
+
+public class UserRepository : IUserRepository
+{
+    private readonly AppDbContext _context;
+
+    public UserRepository(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<User?> GetByIdAsync(int id)
+    {
+        return await _context.Users.FindAsync(id);
+    }
+
+    public async Task<User?> GetByUsernameOrEmailAsync(string identifier)
+    {
+        var lower = identifier.Trim().ToLower();
+        return await _context.Users.FirstOrDefaultAsync(u => 
+            u.Username.ToLower() == lower || u.Email.ToLower() == lower);
+    }
+
+    public async Task<bool> ExistsAsync(string username, string email)
+    {
+        var uLower = username.Trim().ToLower();
+        var eLower = email.Trim().ToLower();
+        return await _context.Users.AnyAsync(u => 
+            u.Username.ToLower() == uLower || u.Email.ToLower() == eLower);
+    }
+
+    public async Task<User> AddAsync(User user)
+    {
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        return user;
+    }
+
+    public async Task<IEnumerable<User>> GetAllAsync()
+    {
+        return await _context.Users.OrderByDescending(u => u.CreatedAt).ToListAsync();
+    }
+}
+

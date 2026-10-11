@@ -1,11 +1,15 @@
 using System.Net.Sockets;
+using System.Text;
 using Backend.Application.Interfaces;
 using Backend.Application.Services;
 using Backend.Data;
 using Backend.Infrastructure.Messaging;
 using Backend.Infrastructure.Repositories;
+using Backend.Infrastructure.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,6 +67,7 @@ builder.Services.AddScoped<IPropertyRepository, PropertyRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IInquiryRepository, InquiryRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Services (Business Logic & Dependency Inversion)
 builder.Services.AddScoped<IPropertyService, PropertyService>();
@@ -70,11 +75,37 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IInquiryService, InquiryService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Kafka Event Messaging (Open/Closed Principle)
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
 builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 builder.Services.AddHostedService<KafkaBookingAuditConsumer>();
+
+// JWT Authentication & Authorization
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtTokenGenerator.SecretKey)),
+        ValidateIssuer = true,
+        ValidIssuer = JwtTokenGenerator.Issuer,
+        ValidateAudience = true,
+        ValidAudience = JwtTokenGenerator.Audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
 
 // Controllers & JSON Settings
 builder.Services.AddControllers()
@@ -131,6 +162,7 @@ if (Directory.Exists(frontendPath))
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

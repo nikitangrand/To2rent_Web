@@ -26,13 +26,40 @@
         <a href="admin.html" class="nav-link active">Админ</a>
     </nav>
 
-    <main class="admin-container">
+    <!-- ADMIN ACCESS GUARD (Shown if user is not Admin) -->
+    <div id="adminAuthGuard" class="admin-guard-container" style="display: none;">
+        <h2>Доступ ограничен</h2>
+        <p>Панель управления доступна только авторизованным пользователям с правами Администратора.</p>
+        
+        <div class="auth-hint-banner" style="text-align: left;">
+            <strong>Данные администратора:</strong><br>
+            Логин: <code>admin</code><br>
+            Пароль: <code>admin123</code>
+        </div>
+
+        <form id="guardLoginForm">
+            <div class="form-grid">
+                <div class="form-group-full">
+                    <label class="input-label" for="guardUsername">Логин или Email *</label>
+                    <input type="text" id="guardUsername" class="input-field" value="admin" required autocomplete="username">
+                </div>
+                <div class="form-group-full">
+                    <label class="input-label" for="guardPassword">Пароль *</label>
+                    <input type="password" id="guardPassword" class="input-field" value="admin123" required autocomplete="current-password">
+                </div>
+            </div>
+            <button type="submit" class="modal-submit-btn" id="guardSubmitBtn" style="margin-top: 16px;">Войти как администратор</button>
+        </form>
+    </div>
+
+    <!-- MAIN ADMIN DASHBOARD (Shown when authenticated as Admin) -->
+    <main class="admin-container" id="adminDashboard" style="display: none;">
         <div class="admin-header">
             <div>
                 <h1>Панель управления</h1>
-                <p style="color: #666; margin-top: 4px;">Управление бронированиями, клиентами, базой недвижимости и отзывами</p>
+                <p style="color: #666; margin-top: 4px;">Управление бронированиями, клиентами, базой недвижимости, отзывами и пользователями</p>
             </div>
-            <div style="display: flex; gap: 12px; align-items: center;">
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 <a href="/scalar/v1" target="_blank" class="btn btn--small" style="background: #222; font-size: 14px; text-decoration: none;">
                     Документация API (Scalar)
                 </a>
@@ -77,10 +104,24 @@
             <button class="admin-tab-btn" data-tab="tab-inquiries">Вопросы и заявки (<span id="tabCountInquiries">0</span>)</button>
             <button class="admin-tab-btn" data-tab="tab-catalog">Каталог недвижимости (<span id="tabCountProperties">0</span>)</button>
             <button class="admin-tab-btn" data-tab="tab-reviews">Отзывы клиентов (<span id="tabCountReviews">0</span>)</button>
+            <button class="admin-tab-btn" data-tab="tab-users">Пользователи (<span id="tabCountUsers">0</span>)</button>
         </div>
 
         <!-- TAB: Bookings -->
         <div class="admin-tab-content active" id="tab-bookings">
+            <div class="admin-toolbar-row">
+                <div class="admin-tag-filters" id="bookingFilterTags">
+                    <button class="btn-tag-filter active" data-status="">Все</button>
+                    <button class="btn-tag-filter" data-status="Pending">Ожидают</button>
+                    <button class="btn-tag-filter" data-status="Confirmed">Подтверждены</button>
+                    <button class="btn-tag-filter" data-status="Cancelled">Отменены</button>
+                    <button class="btn-tag-filter" data-status="Completed">Завершены</button>
+                </div>
+                <div class="admin-search-box">
+                    <input type="text" id="bookingSearchInput" placeholder="Поиск по клиенту или объекту...">
+                </div>
+            </div>
+
             <div class="admin-table-wrapper">
                 <table class="admin-table">
                     <thead>
@@ -105,6 +146,17 @@
 
         <!-- TAB: Inquiries -->
         <div class="admin-tab-content" id="tab-inquiries">
+            <div class="admin-toolbar-row">
+                <div class="admin-tag-filters" id="inquiryFilterTags">
+                    <button class="btn-tag-filter active" data-status="">Все</button>
+                    <button class="btn-tag-filter" data-status="New">Новые</button>
+                    <button class="btn-tag-filter" data-status="Processed">Обработанные</button>
+                </div>
+                <div class="admin-search-box">
+                    <input type="text" id="inquirySearchInput" placeholder="Поиск по имени или контакту...">
+                </div>
+            </div>
+
             <div class="admin-table-wrapper">
                 <table class="admin-table">
                     <thead>
@@ -129,8 +181,13 @@
         <!-- TAB: Catalog -->
         <div class="admin-tab-content" id="tab-catalog">
             <div class="admin-section-header">
-                <h3>Объекты в каталоге</h3>
-                <button class="btn-add-property" onclick="openAddPropertyModal()">Добавить объект</button>
+                <div style="display: flex; gap: 16px; align-items: center;">
+                    <h3>Объекты в каталоге</h3>
+                    <div class="admin-search-box">
+                        <input type="text" id="catalogSearchInput" placeholder="Поиск по названию или городу...">
+                    </div>
+                </div>
+                <button class="btn-add-property" onclick="openPropertyModal()">Добавить объект</button>
             </div>
             <div class="admin-table-wrapper">
                 <table class="admin-table">
@@ -164,87 +221,112 @@
                             <th>Автор</th>
                             <th>Оценка</th>
                             <th>Текст отзыва</th>
+                            <th>Статус</th>
                             <th>Дата публикации</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody id="reviewsTableBody">
-                        <tr><td colspan="6" style="text-align: center; padding: 24px;">Загрузка отзывов...</td></tr>
+                        <tr><td colspan="7" style="text-align: center; padding: 24px;">Загрузка отзывов...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: Users -->
+        <div class="admin-tab-content" id="tab-users">
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Логин</th>
+                            <th>Email</th>
+                            <th>ФИО</th>
+                            <th>Телефон</th>
+                            <th>Роль</th>
+                            <th>Дата регистрации</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="7" style="text-align: center; padding: 24px;">Загрузка пользователей...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
 
-    <!-- Modal for Adding New Property -->
-    <div class="modal-overlay" id="addPropertyModalOverlay">
+    <!-- Modal for Adding / Editing Property -->
+    <div class="modal-overlay" id="propertyModalOverlay">
         <div class="modal-dialog modal-dialog--wide">
-            <button class="modal-close-btn" id="addPropModalClose" aria-label="Закрыть">&times;</button>
-            <h2 class="modal-title">Добавить объект недвижимости</h2>
-            <p class="modal-subtitle">Объект будет сохранен в базу данных и отобразится в каталоге</p>
+            <button class="modal-close-btn" id="propModalClose" aria-label="Закрыть">&times;</button>
+            <h2 class="modal-title" id="propertyModalTitle">Добавить объект недвижимости</h2>
+            <p class="modal-subtitle" id="propertyModalSubtitle">Объект будет сохранен в базу данных и отобразится в каталоге</p>
 
-            <form id="addPropertyForm">
+            <form id="propertyForm">
+                <input type="hidden" id="editPropId" value="">
+                
                 <div class="form-grid">
                     <div>
-                        <label class="input-label" for="newPropTitle">Название объекта *</label>
-                        <input type="text" id="newPropTitle" class="input-field" placeholder="Апартаменты Тверская" required>
+                        <label class="input-label" for="propTitle">Название объекта *</label>
+                        <input type="text" id="propTitle" class="input-field" placeholder="Апартаменты Тверская" required>
                     </div>
 
                     <div>
-                        <label class="input-label" for="newPropType">Тип недвижимости *</label>
-                        <select id="newPropType" class="input-field" required>
+                        <label class="input-label" for="propType">Тип недвижимости *</label>
+                        <select id="propType" class="input-field" required>
                             <option value="apartment">Квартира / Апартаменты</option>
                             <option value="house">Дом / Коттедж</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="input-label" for="newPropCity">Город *</label>
-                        <input type="text" id="newPropCity" class="input-field" placeholder="Москва" required>
+                        <label class="input-label" for="propCity">Город *</label>
+                        <input type="text" id="propCity" class="input-field" placeholder="Москва" required>
                     </div>
 
                     <div>
-                        <label class="input-label" for="newPropPrice">Стоимость ($) *</label>
-                        <input type="number" id="newPropPrice" class="input-field" placeholder="150000" required>
+                        <label class="input-label" for="propPrice">Стоимость ($) *</label>
+                        <input type="number" id="propPrice" class="input-field" placeholder="150000" required>
                     </div>
 
                     <div>
-                        <label class="input-label" for="newPropRooms">Количество комнат / спален</label>
-                        <input type="number" id="newPropRooms" class="input-field" value="2">
+                        <label class="input-label" for="propRooms">Количество комнат / спален</label>
+                        <input type="number" id="propRooms" class="input-field" value="2">
                     </div>
 
                     <div>
-                        <label class="input-label" for="newPropArea">Площадь (м²)</label>
-                        <input type="number" id="newPropArea" class="input-field" value="65">
+                        <label class="input-label" for="propArea">Площадь (м²)</label>
+                        <input type="number" id="propArea" class="input-field" value="65">
                     </div>
 
                     <div>
-                        <label class="input-label" for="newPropFloors">Количество этажей (для домов)</label>
-                        <input type="number" id="newPropFloors" class="input-field" placeholder="2">
+                        <label class="input-label" for="propFloors">Количество этажей (для домов)</label>
+                        <input type="number" id="propFloors" class="input-field" placeholder="2">
                     </div>
 
                     <div>
-                        <label class="input-label" for="newPropLandArea">Площадь участка (м²)</label>
-                        <input type="number" id="newPropLandArea" class="input-field" placeholder="300">
+                        <label class="input-label" for="propLandArea">Площадь участка (м²)</label>
+                        <input type="number" id="propLandArea" class="input-field" placeholder="300">
                     </div>
 
                     <div class="form-group-full">
-                        <label class="input-label" for="newPropImage">Путь к изображению</label>
-                        <input type="text" id="newPropImage" class="input-field" placeholder="Images/Modern_house.jpg" value="Images/Modern_house.jpg">
+                        <label class="input-label" for="propImage">Путь к изображению</label>
+                        <input type="text" id="propImage" class="input-field" placeholder="Images/Modern_house.jpg" value="Images/Modern_house.jpg">
                     </div>
 
                     <div class="form-group-full">
-                        <label class="input-label" for="newPropDesc">Краткое описание *</label>
-                        <input type="text" id="newPropDesc" class="input-field" placeholder="Светлая квартира с ремонтом в центре города" required>
+                        <label class="input-label" for="propDesc">Краткое описание *</label>
+                        <input type="text" id="propDesc" class="input-field" placeholder="Светлая квартира с ремонтом в центре города" required>
                     </div>
 
                     <div class="form-group-full">
-                        <label class="input-label" for="newPropFullDesc">Полное описание и особенности</label>
-                        <textarea id="newPropFullDesc" class="input-field" placeholder="Подробные характеристики объекта, отделка, инфраструктура..."></textarea>
+                        <label class="input-label" for="propFullDesc">Полное описание и особенности</label>
+                        <textarea id="propFullDesc" class="input-field" placeholder="Подробные характеристики объекта, отделка, инфраструктура..."></textarea>
                     </div>
                 </div>
 
-                <button type="submit" class="modal-submit-btn" style="margin-top: 16px;">Сохранить в базу данных</button>
+                <button type="submit" class="modal-submit-btn" id="propSubmitBtn" style="margin-top: 16px;">Сохранить в базу данных</button>
             </form>
         </div>
     </div>

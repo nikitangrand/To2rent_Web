@@ -1,7 +1,5 @@
-// TO2RENT API Client
+// TO2RENT API Client (With JWT Authentication & Role Management)
 const To2RentApi = (() => {
-    // If frontend is served directly by ASP.NET backend (e.g. localhost:5000), use origin;
-    // otherwise default to http://localhost:5000 for local live servers or file://
     const getBaseUrl = () => {
         if (window.location.protocol.startsWith('http') && 
             (window.location.port === '5000' || window.location.port === '5001' || window.location.port === '5140')) {
@@ -14,10 +12,16 @@ const To2RentApi = (() => {
 
     async function request(endpoint, options = {}) {
         const url = `${API_BASE}${endpoint}`;
+        const token = localStorage.getItem('to2rent_token');
+
         const defaultHeaders = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         };
+
+        if (token) {
+            defaultHeaders['Authorization'] = `Bearer ${token}`;
+        }
 
         const config = {
             ...options,
@@ -48,6 +52,69 @@ const To2RentApi = (() => {
 
     return {
         baseUrl: API_BASE,
+
+        // Authentication & User Identity
+        async register(data) {
+            const res = await request('/api/auth/register', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            if (res && res.token) {
+                localStorage.setItem('to2rent_token', res.token);
+                localStorage.setItem('to2rent_user', JSON.stringify(res.user));
+                window.dispatchEvent(new CustomEvent('to2rent:auth_changed', { detail: res.user }));
+            }
+            return res;
+        },
+
+        async login(usernameOrEmail, password) {
+            const res = await request('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ usernameOrEmail, password })
+            });
+            if (res && res.token) {
+                localStorage.setItem('to2rent_token', res.token);
+                localStorage.setItem('to2rent_user', JSON.stringify(res.user));
+                window.dispatchEvent(new CustomEvent('to2rent:auth_changed', { detail: res.user }));
+            }
+            return res;
+        },
+
+        logout() {
+            localStorage.removeItem('to2rent_token');
+            localStorage.removeItem('to2rent_user');
+            window.dispatchEvent(new CustomEvent('to2rent:auth_changed', { detail: null }));
+        },
+
+        getCurrentUser() {
+            try {
+                const raw = localStorage.getItem('to2rent_user');
+                return raw ? JSON.parse(raw) : null;
+            } catch (_) {
+                return null;
+            }
+        },
+
+        getToken() {
+            return localStorage.getItem('to2rent_token');
+        },
+
+        isAuthenticated() {
+            return !!localStorage.getItem('to2rent_token');
+        },
+
+        isAdmin() {
+            const u = this.getCurrentUser();
+            return u && (u.role === 'Admin' || u.role === 'admin');
+        },
+
+        getMe() {
+            return request('/api/auth/me');
+        },
+
+        getAllUsers() {
+            return request('/api/auth/users');
+        },
 
         // Properties
         getProperties(filters = {}) {
@@ -136,6 +203,13 @@ const To2RentApi = (() => {
             return request('/api/reviews', {
                 method: 'POST',
                 body: JSON.stringify(data)
+            });
+        },
+
+        updateReviewStatus(id, isApproved) {
+            return request(`/api/reviews/${id}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ isApproved })
             });
         },
 

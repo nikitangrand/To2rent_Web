@@ -1,17 +1,23 @@
-// TO2RENT Global Interactive Features (Modals, Toasts, Forms, Bookings) - Clean & No Emojis
+// TO2RENT Global Interactive Features (Auth, Modals, Toasts, Forms, Bookings) - Clean & No Emojis
 
 document.addEventListener('DOMContentLoaded', () => {
     initToastContainer();
     initBookingModal();
     initManagerModal();
+    initAuthModal();
+    renderAuthNavbar();
     bindGlobalButtons();
     bindSearchForm();
     bindFooterForms();
     highlightCurrentNavLink();
+
+    window.addEventListener('to2rent:auth_changed', () => {
+        renderAuthNavbar();
+    });
 });
 
 // ==========================================================================
-// Toast Notifications (Zero Emojis)
+// 1. Toast Notifications (Zero Emojis)
 // ==========================================================================
 let toastContainer = null;
 
@@ -52,7 +58,245 @@ function showToast(title, message, type = 'info', duration = 4000) {
 }
 
 // ==========================================================================
-// Booking Modal System
+// 2. Navigation Auth Bar & State Synchronization
+// ==========================================================================
+function renderAuthNavbar() {
+    const nav = document.querySelector('.main-nav');
+    if (!nav) return;
+
+    let authBox = nav.querySelector('.nav-auth-box');
+    if (!authBox) {
+        authBox = document.createElement('div');
+        authBox.className = 'nav-auth-box';
+        nav.appendChild(authBox);
+    }
+
+    const user = To2RentApi.getCurrentUser();
+    if (user) {
+        const isAdmin = user.role === 'Admin' || user.role === 'admin';
+        authBox.innerHTML = `
+            <div class="user-greeting">
+                <span>${escapeHtml(user.fullName || user.username)}</span>
+                <span class="role-badge ${isAdmin ? 'role-badge--admin' : 'role-badge--client'}">
+                    ${isAdmin ? 'Администратор' : 'Клиент'}
+                </span>
+            </div>
+            <button type="button" class="btn-nav-logout" id="navLogoutBtn">Выйти</button>
+        `;
+
+        document.getElementById('navLogoutBtn')?.addEventListener('click', () => {
+            To2RentApi.logout();
+            showToast('Выход выполнен', 'Сеанс завершен.', 'info');
+        });
+    } else {
+        authBox.innerHTML = `
+            <button type="button" class="btn-nav-auth" id="navLoginBtn">Войти</button>
+            <button type="button" class="btn-nav-logout" id="navRegBtn">Регистрация</button>
+        `;
+
+        document.getElementById('navLoginBtn')?.addEventListener('click', () => openAuthModal('login'));
+        document.getElementById('navRegBtn')?.addEventListener('click', () => openAuthModal('register'));
+    }
+}
+
+// ==========================================================================
+// 3. Authentication & Registration Modal
+// ==========================================================================
+let authModal = null;
+
+function initAuthModal() {
+    if (document.getElementById('authModalOverlay')) return;
+
+    const modalMarkup = `
+    <div class="modal-overlay" id="authModalOverlay">
+        <div class="modal-dialog">
+            <button class="modal-close-btn" id="authModalClose" aria-label="Закрыть">&times;</button>
+            
+            <div class="auth-tabs">
+                <button type="button" class="auth-tab-btn active" id="authTabLoginBtn">Вход</button>
+                <button type="button" class="auth-tab-btn" id="authTabRegisterBtn">Регистрация</button>
+            </div>
+
+            <!-- Hint for Demo Accounts -->
+            <div class="auth-hint-banner">
+                <strong>Тестовые учетные записи:</strong><br>
+                Администратор: <code>admin</code> / <code>admin123</code><br>
+                Клиент: <code>client</code> / <code>client123</code>
+            </div>
+
+            <!-- LOGIN TAB FORM -->
+            <form id="authLoginForm">
+                <div class="form-grid">
+                    <div class="form-group-full">
+                        <label class="input-label" for="loginUsername">Логин или Email *</label>
+                        <input type="text" id="loginUsername" class="input-field" placeholder="admin или client@mail.ru" required autocomplete="username">
+                    </div>
+
+                    <div class="form-group-full">
+                        <label class="input-label" for="loginPassword">Пароль *</label>
+                        <input type="password" id="loginPassword" class="input-field" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                </div>
+
+                <button type="submit" class="modal-submit-btn" id="loginSubmitBtn" style="margin-top: 18px;">Войти в аккаунт</button>
+            </form>
+
+            <!-- REGISTER TAB FORM -->
+            <form id="authRegisterForm" style="display: none;">
+                <div class="form-grid">
+                    <div>
+                        <label class="input-label" for="regUsername">Логин *</label>
+                        <input type="text" id="regUsername" class="input-field" placeholder="alex_grand" required autocomplete="username">
+                    </div>
+
+                    <div>
+                        <label class="input-label" for="regEmail">Электронная почта *</label>
+                        <input type="email" id="regEmail" class="input-field" placeholder="alex@domain.ru" required autocomplete="email">
+                    </div>
+
+                    <div>
+                        <label class="input-label" for="regPassword">Пароль (мин. 6 симв.) *</label>
+                        <input type="password" id="regPassword" class="input-field" placeholder="••••••••" minlength="6" required autocomplete="new-password">
+                    </div>
+
+                    <div>
+                        <label class="input-label" for="regRole">Роль в системе *</label>
+                        <select id="regRole" class="input-field">
+                            <option value="Client" selected>Клиент (Арендатор)</option>
+                            <option value="Admin">Администратор</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group-full">
+                        <label class="input-label" for="regFullName">ФИО *</label>
+                        <input type="text" id="regFullName" class="input-field" placeholder="Алексей Громов" required>
+                    </div>
+
+                    <div class="form-group-full">
+                        <label class="input-label" for="regPhone">Контактный телефон</label>
+                        <input type="tel" id="regPhone" class="input-field" placeholder="+7 (999) 000-00-00">
+                    </div>
+                </div>
+
+                <button type="submit" class="modal-submit-btn" id="regSubmitBtn" style="margin-top: 18px;">Зарегистрироваться</button>
+            </form>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalMarkup);
+    authModal = document.getElementById('authModalOverlay');
+
+    const closeBtn = document.getElementById('authModalClose');
+    closeBtn?.addEventListener('click', closeAuthModal);
+
+    authModal?.addEventListener('click', (e) => {
+        if (e.target === authModal) closeAuthModal();
+    });
+
+    const loginTabBtn = document.getElementById('authTabLoginBtn');
+    const regTabBtn = document.getElementById('authTabRegisterBtn');
+
+    loginTabBtn?.addEventListener('click', () => switchAuthTab('login'));
+    regTabBtn?.addEventListener('click', () => switchAuthTab('register'));
+
+    document.getElementById('authLoginForm')?.addEventListener('submit', handleAuthLoginSubmit);
+    document.getElementById('authRegisterForm')?.addEventListener('submit', handleAuthRegisterSubmit);
+}
+
+function switchAuthTab(tab) {
+    const loginTabBtn = document.getElementById('authTabLoginBtn');
+    const regTabBtn = document.getElementById('authTabRegisterBtn');
+    const loginForm = document.getElementById('authLoginForm');
+    const regForm = document.getElementById('authRegisterForm');
+
+    if (tab === 'login') {
+        loginTabBtn?.classList.add('active');
+        regTabBtn?.classList.remove('active');
+        if (loginForm) loginForm.style.display = 'block';
+        if (regForm) regForm.style.display = 'none';
+    } else {
+        loginTabBtn?.classList.remove('active');
+        regTabBtn?.classList.add('active');
+        if (loginForm) loginForm.style.display = 'none';
+        if (regForm) regForm.style.display = 'block';
+    }
+}
+
+function openAuthModal(defaultTab = 'login') {
+    initAuthModal();
+    switchAuthTab(defaultTab);
+    authModal?.classList.add('active');
+}
+
+function closeAuthModal() {
+    authModal?.classList.remove('active');
+}
+
+async function handleAuthLoginSubmit(e) {
+    e.preventDefault();
+    const submitBtn = document.getElementById('loginSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Вход...';
+
+    const usernameOrEmail = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    try {
+        const res = await To2RentApi.login(usernameOrEmail, password);
+        closeAuthModal();
+        showToast(
+            'Авторизация успешна',
+            `Добро пожаловать, ${res.user.fullName || res.user.username}! Роль: ${res.user.role === 'Admin' ? 'Администратор' : 'Клиент'}.`,
+            'success'
+        );
+        document.getElementById('authLoginForm').reset();
+    } catch (err) {
+        showToast('Ошибка входа', err.message || 'Неверный логин или пароль', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Войти в аккаунт';
+    }
+}
+
+async function handleAuthRegisterSubmit(e) {
+    e.preventDefault();
+    const submitBtn = document.getElementById('regSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Регистрация...';
+
+    const username = document.getElementById('regUsername').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const fullName = document.getElementById('regFullName').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const role = document.getElementById('regRole').value;
+
+    try {
+        const res = await To2RentApi.register({
+            username,
+            email,
+            password,
+            fullName,
+            phone,
+            role
+        });
+        closeAuthModal();
+        showToast(
+            'Регистрация завершена',
+            `Аккаунт ${res.user.username} успешно создан. Вы авторизованы как ${res.user.role === 'Admin' ? 'Администратор' : 'Клиент'}.`,
+            'success'
+        );
+        document.getElementById('authRegisterForm').reset();
+    } catch (err) {
+        showToast('Ошибка регистрации', err.message || 'Не удалось зарегистрироваться', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Зарегистрироваться';
+    }
+}
+
+// ==========================================================================
+// 4. Booking Modal System
 // ==========================================================================
 let bookingModal = null;
 let currentBookingProperty = null;
@@ -115,7 +359,7 @@ function initBookingModal() {
 
                     <div class="form-group-full">
                         <label class="input-label" for="bookNotes">Пожелания или комментарии</label>
-                        <textarea id="bookNotes" class="input-field" placeholder="Время прибытия, детская кроватка, парковка..."></textarea>
+                        <textarea id="bookNotes" class="input-field" placeholder="Время прибытия, трансфер, детская кроватка..."></textarea>
                     </div>
                 </div>
 
@@ -136,19 +380,19 @@ function initBookingModal() {
     bookingModal = document.getElementById('bookingModalOverlay');
 
     const closeBtn = document.getElementById('bookingModalClose');
-    closeBtn.addEventListener('click', closeBookingModal);
+    closeBtn?.addEventListener('click', closeBookingModal);
 
-    bookingModal.addEventListener('click', (e) => {
+    bookingModal?.addEventListener('click', (e) => {
         if (e.target === bookingModal) closeBookingModal();
     });
 
     const inInput = document.getElementById('bookCheckIn');
     const outInput = document.getElementById('bookCheckOut');
-    inInput.addEventListener('change', updateBookingPriceCalculation);
-    outInput.addEventListener('change', updateBookingPriceCalculation);
+    inInput?.addEventListener('change', updateBookingPriceCalculation);
+    outInput?.addEventListener('change', updateBookingPriceCalculation);
 
     const form = document.getElementById('bookingForm');
-    form.addEventListener('submit', handleBookingSubmit);
+    form?.addEventListener('submit', handleBookingSubmit);
 }
 
 function openBookingModal(property = {}) {
@@ -169,6 +413,17 @@ function openBookingModal(property = {}) {
         preview.style.display = 'none';
     }
 
+    // Auto-fill user profile if logged in
+    const user = To2RentApi.getCurrentUser();
+    if (user) {
+        const nameInput = document.getElementById('bookClientName');
+        const phoneInput = document.getElementById('bookClientPhone');
+        const emailInput = document.getElementById('bookClientEmail');
+        if (nameInput && !nameInput.value) nameInput.value = user.fullName || user.username;
+        if (phoneInput && !phoneInput.value) phoneInput.value = user.phone || '';
+        if (emailInput && !emailInput.value) emailInput.value = user.email || '';
+    }
+
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
@@ -182,22 +437,20 @@ function openBookingModal(property = {}) {
     document.getElementById('bookCheckOut').min = formatDateIso(tomorrow);
 
     updateBookingPriceCalculation();
-    bookingModal.classList.add('active');
+    bookingModal?.classList.add('active');
 }
 
 function closeBookingModal() {
-    if (bookingModal) {
-        bookingModal.classList.remove('active');
-    }
+    bookingModal?.classList.remove('active');
 }
 
 function updateBookingPriceCalculation() {
-    const inVal = document.getElementById('bookCheckIn').value;
-    const outVal = document.getElementById('bookCheckOut').value;
+    const inVal = document.getElementById('bookCheckIn')?.value;
+    const outVal = document.getElementById('bookCheckOut')?.value;
     const totalEl = document.getElementById('bookingTotalPrice');
     const daysEl = document.getElementById('bookingDaysCount');
 
-    if (!inVal || !outVal) return;
+    if (!inVal || !outVal || !totalEl || !daysEl) return;
 
     const inDate = new Date(inVal);
     const outDate = new Date(outVal);
@@ -265,7 +518,7 @@ async function handleBookingSubmit(e) {
 }
 
 // ==========================================================================
-// Manager Contact Modal System
+// 5. Manager Contact Modal System
 // ==========================================================================
 let managerModal = null;
 let currentManagerName = '';
@@ -307,27 +560,34 @@ function initManagerModal() {
     managerModal = document.getElementById('managerModalOverlay');
 
     const closeBtn = document.getElementById('managerModalClose');
-    closeBtn.addEventListener('click', closeManagerModal);
+    closeBtn?.addEventListener('click', closeManagerModal);
 
-    managerModal.addEventListener('click', (e) => {
+    managerModal?.addEventListener('click', (e) => {
         if (e.target === managerModal) closeManagerModal();
     });
 
     const form = document.getElementById('managerForm');
-    form.addEventListener('submit', handleManagerSubmit);
+    form?.addEventListener('submit', handleManagerSubmit);
 }
 
 function openManagerModal(managerName = 'Менеджер TO2RENT') {
     initManagerModal();
     currentManagerName = managerName;
     document.getElementById('managerModalTitle').textContent = `Связаться: ${managerName}`;
-    managerModal.classList.add('active');
+
+    const user = To2RentApi.getCurrentUser();
+    if (user) {
+        const nameInput = document.getElementById('managerClientName');
+        const contactInput = document.getElementById('managerContactInfo');
+        if (nameInput && !nameInput.value) nameInput.value = user.fullName || user.username;
+        if (contactInput && !contactInput.value) contactInput.value = user.phone || user.email || '';
+    }
+
+    managerModal?.classList.add('active');
 }
 
 function closeManagerModal() {
-    if (managerModal) {
-        managerModal.classList.remove('active');
-    }
+    managerModal?.classList.remove('active');
 }
 
 async function handleManagerSubmit(e) {
@@ -359,7 +619,7 @@ async function handleManagerSubmit(e) {
 }
 
 // ==========================================================================
-// Button Bindings
+// 6. Global Button Bindings
 // ==========================================================================
 function bindGlobalButtons() {
     const highlightBookBtn = document.querySelector('.btn--highlight');
@@ -421,7 +681,7 @@ function bindSearchForm() {
     const handleSearch = () => {
         const query = (input?.value || '').trim();
         if (!query) {
-            showToast('Поиск', 'Введите название города для поиска', 'info');
+            showToast('Поиск', 'Введите название города или объекта для поиска', 'info');
             return;
         }
 
@@ -456,11 +716,15 @@ function bindFooterForms() {
             btn.disabled = true;
             btn.textContent = '...';
 
+            const user = To2RentApi.getCurrentUser();
+            const name = user ? (user.fullName || user.username) : 'Клиент сайта';
+            const contactInfo = user ? (user.phone || user.email || 'Авторизован') : 'Форма обратной связи';
+
             try {
                 await To2RentApi.createInquiry({
-                    name: 'Клиент сайта',
-                    contactInfo: 'Форма обратной связи',
-                    message: message,
+                    name,
+                    contactInfo,
+                    message,
                     targetManager: 'Общий отдел'
                 });
 
@@ -523,3 +787,6 @@ function escapeHtml(str) {
 window.showToast = showToast;
 window.openBookingModal = openBookingModal;
 window.openManagerModal = openManagerModal;
+window.openAuthModal = openAuthModal;
+window.closeAuthModal = closeAuthModal;
+window.renderAuthNavbar = renderAuthNavbar;

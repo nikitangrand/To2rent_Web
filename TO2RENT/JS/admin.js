@@ -1,11 +1,70 @@
-// TO2RENT Control Center (Clean Typography & Zero Emojis)
+// TO2RENT Control Center (Zero Emojis, Complete CRUD, Real Handlers, Role Guard)
+
+let currentBookingStatus = '';
+let currentBookingSearch = '';
+let currentInquiryStatus = '';
+let currentInquirySearch = '';
+let currentCatalogSearch = '';
 
 document.addEventListener('DOMContentLoaded', () => {
+    initAdminAccess();
     initTabs();
-    initAddPropertyModal();
-    loadAllAdminData();
+    initPropertyModal();
+    initFilterBars();
+
+    window.addEventListener('to2rent:auth_changed', () => {
+        initAdminAccess();
+    });
 });
 
+// ==========================================================================
+// 1. Role Access Guard
+// ==========================================================================
+function initAdminAccess() {
+    const guard = document.getElementById('adminAuthGuard');
+    const dashboard = document.getElementById('adminDashboard');
+    const guardForm = document.getElementById('guardLoginForm');
+
+    if (To2RentApi.isAdmin()) {
+        if (guard) guard.style.display = 'none';
+        if (dashboard) dashboard.style.display = 'block';
+        loadAllAdminData();
+    } else {
+        if (dashboard) dashboard.style.display = 'none';
+        if (guard) guard.style.display = 'block';
+
+        guardForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('guardSubmitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Проверка доступа...';
+
+            const u = document.getElementById('guardUsername').value.trim();
+            const p = document.getElementById('guardPassword').value;
+
+            try {
+                const res = await To2RentApi.login(u, p);
+                if (res.user.role === 'Admin' || res.user.role === 'admin') {
+                    showToast('Доступ предоставлен', `Добро пожаловать в панель управления, ${res.user.fullName || res.user.username}!`, 'success');
+                    if (guard) guard.style.display = 'none';
+                    if (dashboard) dashboard.style.display = 'block';
+                    loadAllAdminData();
+                } else {
+                    showToast('Ограничение прав', 'Ваша учетная запись не имеет прав Администратора. Обратитесь к системному администратору.', 'error');
+                }
+            } catch (err) {
+                showToast('Ошибка входа', err.message || 'Неверные учетные данные администратора', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Войти как администратор';
+            }
+        });
+    }
+}
+
+// ==========================================================================
+// 2. Tabs & Filters
+// ==========================================================================
 function initTabs() {
     const tabs = document.querySelectorAll('.admin-tab-btn');
     tabs.forEach(tab => {
@@ -20,18 +79,60 @@ function initTabs() {
     });
 }
 
+function initFilterBars() {
+    // Booking filters
+    document.querySelectorAll('#bookingFilterTags .btn-tag-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#bookingFilterTags .btn-tag-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentBookingStatus = btn.getAttribute('data-status') || '';
+            loadBookingsTable();
+        });
+    });
+
+    const bookSearch = document.getElementById('bookingSearchInput');
+    bookSearch?.addEventListener('input', debounce((e) => {
+        currentBookingSearch = e.target.value.trim().toLowerCase();
+        loadBookingsTable();
+    }, 250));
+
+    // Inquiry filters
+    document.querySelectorAll('#inquiryFilterTags .btn-tag-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#inquiryFilterTags .btn-tag-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentInquiryStatus = btn.getAttribute('data-status') || '';
+            loadInquiriesTable();
+        });
+    });
+
+    const inqSearch = document.getElementById('inquirySearchInput');
+    inqSearch?.addEventListener('input', debounce((e) => {
+        currentInquirySearch = e.target.value.trim().toLowerCase();
+        loadInquiriesTable();
+    }, 250));
+
+    // Catalog search
+    const catSearch = document.getElementById('catalogSearchInput');
+    catSearch?.addEventListener('input', debounce((e) => {
+        currentCatalogSearch = e.target.value.trim().toLowerCase();
+        loadCatalogTable();
+    }, 250));
+}
+
 async function loadAllAdminData() {
     await Promise.all([
         loadKpis(),
         loadBookingsTable(),
         loadInquiriesTable(),
         loadCatalogTable(),
-        loadReviewsTable()
+        loadReviewsTable(),
+        loadUsersTable()
     ]);
 }
 
 // ==========================================================================
-// 1. KPI Loading
+// 3. KPI Loading
 // ==========================================================================
 async function loadKpis() {
     try {
@@ -58,16 +159,24 @@ async function loadKpis() {
 }
 
 // ==========================================================================
-// 2. Bookings Table
+// 4. Bookings Management
 // ==========================================================================
 async function loadBookingsTable() {
     const tbody = document.getElementById('bookingsTableBody');
     if (!tbody) return;
 
     try {
-        const bookings = await To2RentApi.getBookings();
+        let bookings = await To2RentApi.getBookings(currentBookingStatus);
+        if (currentBookingSearch) {
+            bookings = bookings.filter(b => 
+                (b.clientName && b.clientName.toLowerCase().includes(currentBookingSearch)) ||
+                (b.propertyTitle && b.propertyTitle.toLowerCase().includes(currentBookingSearch)) ||
+                (b.clientPhone && b.clientPhone.toLowerCase().includes(currentBookingSearch))
+            );
+        }
+
         if (!bookings || bookings.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #888; padding: 24px;">Бронирований пока нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #888; padding: 24px;">Бронирований не найдено</td></tr>';
             return;
         }
 
@@ -110,6 +219,7 @@ async function loadBookingsTable() {
                 <td>
                     <div class="btn-action-group">
                         ${b.status !== 'Confirmed' ? `<button class="btn-sm-action btn-sm-action--success" onclick="changeBookingStatus(${b.id}, 'Confirmed')">Подтвердить</button>` : ''}
+                        ${b.status !== 'Completed' && b.status === 'Confirmed' ? `<button class="btn-sm-action" onclick="changeBookingStatus(${b.id}, 'Completed')">Завершить</button>` : ''}
                         ${b.status !== 'Cancelled' ? `<button class="btn-sm-action btn-sm-action--danger" onclick="changeBookingStatus(${b.id}, 'Cancelled')">Отменить</button>` : ''}
                         <button class="btn-sm-action" onclick="deleteBookingItem(${b.id})">Удалить</button>
                     </div>
@@ -126,7 +236,7 @@ async function loadBookingsTable() {
 async function changeBookingStatus(id, newStatus) {
     try {
         await To2RentApi.updateBookingStatus(id, newStatus);
-        showToast('Статус изменен', `Бронь #${id} обновлена`, 'success');
+        showToast('Статус обновлен', `Бронь #${id} переведена в статус "${newStatus}"`, 'success');
         await loadBookingsTable();
         await loadKpis();
     } catch (e) {
@@ -147,16 +257,24 @@ async function deleteBookingItem(id) {
 }
 
 // ==========================================================================
-// 3. Inquiries Table
+// 5. Inquiries Management
 // ==========================================================================
 async function loadInquiriesTable() {
     const tbody = document.getElementById('inquiriesTableBody');
     if (!tbody) return;
 
     try {
-        const inquiries = await To2RentApi.getInquiries();
+        let inquiries = await To2RentApi.getInquiries(currentInquiryStatus);
+        if (currentInquirySearch) {
+            inquiries = inquiries.filter(i => 
+                (i.name && i.name.toLowerCase().includes(currentInquirySearch)) ||
+                (i.contactInfo && i.contactInfo.toLowerCase().includes(currentInquirySearch)) ||
+                (i.message && i.message.toLowerCase().includes(currentInquirySearch))
+            );
+        }
+
         if (!inquiries || inquiries.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #888; padding: 24px;">Запросов пока нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #888; padding: 24px;">Запросов не найдено</td></tr>';
             return;
         }
 
@@ -214,14 +332,26 @@ async function deleteInquiryItem(id) {
 }
 
 // ==========================================================================
-// 4. Catalog Table
+// 6. Catalog Management (CRUD: Add, Edit, Delete)
 // ==========================================================================
+let currentCatalogData = [];
+
 async function loadCatalogTable() {
     const tbody = document.getElementById('catalogTableBody');
     if (!tbody) return;
 
     try {
-        const properties = await To2RentApi.getProperties();
+        let properties = await To2RentApi.getProperties();
+        currentCatalogData = properties || [];
+
+        if (currentCatalogSearch) {
+            properties = properties.filter(p => 
+                (p.title && p.title.toLowerCase().includes(currentCatalogSearch)) ||
+                (p.city && p.city.toLowerCase().includes(currentCatalogSearch)) ||
+                (p.description && p.description.toLowerCase().includes(currentCatalogSearch))
+            );
+        }
+
         if (!properties || properties.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 24px;">Объекты не найдены</td></tr>';
             return;
@@ -249,7 +379,8 @@ async function loadCatalogTable() {
                 </td>
                 <td>
                     <div class="btn-action-group">
-                        <a href="${p.detailLink || '#'}" target="_blank" class="btn-sm-action">Просмотр</a>
+                        <a href="${p.detailLink ? (p.detailLink.startsWith('../') ? p.detailLink : '../' + p.detailLink) : '#'}" target="_blank" class="btn-sm-action">Просмотр</a>
+                        <button class="btn-sm-action" onclick="openPropertyModalForEdit(${p.id})">Редактировать</button>
                         <button class="btn-sm-action btn-sm-action--danger" onclick="deleteCatalogItem(${p.id}, '${escapeHtml(p.title)}')">Удалить</button>
                     </div>
                 </td>
@@ -262,21 +393,9 @@ async function loadCatalogTable() {
     }
 }
 
-async function deleteCatalogItem(id, title) {
-    if (!confirm(`Удалить объект "${title}"?`)) return;
-    try {
-        await To2RentApi.deleteProperty(id);
-        showToast('Удалено', `Объект "${title}" удален`, 'info');
-        await loadCatalogTable();
-        await loadKpis();
-    } catch (e) {
-        showToast('Ошибка', e.message, 'error');
-    }
-}
-
-function initAddPropertyModal() {
-    const modal = document.getElementById('addPropertyModalOverlay');
-    const closeBtn = document.getElementById('addPropModalClose');
+function initPropertyModal() {
+    const modal = document.getElementById('propertyModalOverlay');
+    const closeBtn = document.getElementById('propModalClose');
     if (!modal) return;
 
     closeBtn?.addEventListener('click', () => modal.classList.remove('active'));
@@ -284,21 +403,22 @@ function initAddPropertyModal() {
         if (e.target === modal) modal.classList.remove('active');
     });
 
-    const form = document.getElementById('addPropertyForm');
+    const form = document.getElementById('propertyForm');
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const title = document.getElementById('newPropTitle').value.trim();
-        const type = document.getElementById('newPropType').value;
-        const city = document.getElementById('newPropCity').value.trim();
-        const price = parseFloat(document.getElementById('newPropPrice').value);
-        const rooms = parseInt(document.getElementById('newPropRooms').value || '1', 10);
-        const area = parseInt(document.getElementById('newPropArea').value || '50', 10);
-        const floors = parseInt(document.getElementById('newPropFloors').value || '1', 10);
-        const landArea = parseInt(document.getElementById('newPropLandArea').value || '0', 10);
-        const image = document.getElementById('newPropImage').value.trim();
-        const desc = document.getElementById('newPropDesc').value.trim();
-        const fullDesc = document.getElementById('newPropFullDesc').value.trim();
+        const editId = document.getElementById('editPropId').value;
+        const title = document.getElementById('propTitle').value.trim();
+        const type = document.getElementById('propType').value;
+        const city = document.getElementById('propCity').value.trim();
+        const price = parseFloat(document.getElementById('propPrice').value);
+        const rooms = parseInt(document.getElementById('propRooms').value || '1', 10);
+        const area = parseInt(document.getElementById('propArea').value || '50', 10);
+        const floors = parseInt(document.getElementById('propFloors').value || '1', 10);
+        const landArea = parseInt(document.getElementById('propLandArea').value || '0', 10);
+        const image = document.getElementById('propImage').value.trim();
+        const desc = document.getElementById('propDesc').value.trim();
+        const fullDesc = document.getElementById('propFullDesc').value.trim();
 
         const payload = {
             title,
@@ -317,10 +437,17 @@ function initAddPropertyModal() {
         };
 
         try {
-            await To2RentApi.createProperty(payload);
+            if (editId) {
+                await To2RentApi.updateProperty(parseInt(editId, 10), payload);
+                showToast('Обновлено', `Объект "${title}" успешно изменен в базе`, 'success');
+            } else {
+                await To2RentApi.createProperty(payload);
+                showToast('Добавлено', `Новый объект "${title}" добавлен в каталог`, 'success');
+            }
+
             modal.classList.remove('active');
             form.reset();
-            showToast('Успех', `Объект "${title}" добавлен в базу`, 'success');
+            document.getElementById('editPropId').value = '';
             await loadCatalogTable();
             await loadKpis();
         } catch (err) {
@@ -329,12 +456,59 @@ function initAddPropertyModal() {
     });
 }
 
-function openAddPropertyModal() {
-    document.getElementById('addPropertyModalOverlay')?.classList.add('active');
+function openPropertyModal() {
+    const modal = document.getElementById('propertyModalOverlay');
+    const title = document.getElementById('propertyModalTitle');
+    const subtitle = document.getElementById('propertyModalSubtitle');
+    const form = document.getElementById('propertyForm');
+
+    form?.reset();
+    document.getElementById('editPropId').value = '';
+    title.textContent = 'Добавить объект недвижимости';
+    subtitle.textContent = 'Объект будет сохранен в базу данных и сразу появится на сайте';
+    modal?.classList.add('active');
+}
+
+function openPropertyModalForEdit(id) {
+    const item = currentCatalogData.find(x => x.id === id);
+    if (!item) return;
+
+    const modal = document.getElementById('propertyModalOverlay');
+    const title = document.getElementById('propertyModalTitle');
+    const subtitle = document.getElementById('propertyModalSubtitle');
+
+    document.getElementById('editPropId').value = item.id;
+    document.getElementById('propTitle').value = item.title || '';
+    document.getElementById('propType').value = item.type || 'apartment';
+    document.getElementById('propCity').value = item.city || '';
+    document.getElementById('propPrice').value = item.price || 0;
+    document.getElementById('propRooms').value = item.rooms || 1;
+    document.getElementById('propArea').value = item.area || 50;
+    document.getElementById('propFloors').value = item.floors || '';
+    document.getElementById('propLandArea').value = item.landArea || '';
+    document.getElementById('propImage').value = item.image || '';
+    document.getElementById('propDesc').value = item.description || '';
+    document.getElementById('propFullDesc').value = item.fullDescription || '';
+
+    title.textContent = `Редактировать объект #${item.id}`;
+    subtitle.textContent = `Изменение параметров для "${item.title}"`;
+    modal?.classList.add('active');
+}
+
+async function deleteCatalogItem(id, title) {
+    if (!confirm(`Вы действительно хотите удалить объект "${title}"?`)) return;
+    try {
+        await To2RentApi.deleteProperty(id);
+        showToast('Удалено', `Объект "${title}" удален из базы`, 'info');
+        await loadCatalogTable();
+        await loadKpis();
+    } catch (e) {
+        showToast('Ошибка', e.message, 'error');
+    }
 }
 
 // ==========================================================================
-// 5. Reviews Table
+// 7. Reviews Management (Approve/Hide & Delete)
 // ==========================================================================
 async function loadReviewsTable() {
     const tbody = document.getElementById('reviewsTableBody');
@@ -343,7 +517,7 @@ async function loadReviewsTable() {
     try {
         const reviews = await To2RentApi.getReviews(false);
         if (!reviews || reviews.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 24px;">Отзывов нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px;">Отзывов нет</td></tr>';
             return;
         }
 
@@ -354,17 +528,38 @@ async function loadReviewsTable() {
                 <td><strong>#${r.id}</strong></td>
                 <td><strong>${escapeHtml(r.author)}</strong></td>
                 <td style="font-weight: 700;">${r.rating} / 5</td>
-                <td style="max-width: 400px;">${escapeHtml(r.comment)}</td>
+                <td style="max-width: 360px;">${escapeHtml(r.comment)}</td>
+                <td>
+                    <span class="badge ${r.isApproved ? 'badge--approved' : 'badge--hidden'}">
+                        ${r.isApproved ? 'Опубликован' : 'Скрыт'}
+                    </span>
+                </td>
                 <td>${formatDateShort(r.createdAt)}</td>
                 <td>
-                    <button class="btn-sm-action btn-sm-action--danger" onclick="deleteReviewItem(${r.id})">Удалить</button>
+                    <div class="btn-action-group">
+                        <button class="btn-sm-action ${r.isApproved ? '' : 'btn-sm-action--success'}" onclick="toggleReviewApproval(${r.id}, ${!r.isApproved})">
+                            ${r.isApproved ? 'Скрыть' : 'Одобрить'}
+                        </button>
+                        <button class="btn-sm-action btn-sm-action--danger" onclick="deleteReviewItem(${r.id})">Удалить</button>
+                    </div>
                 </td>
             `;
 
             tbody.appendChild(tr);
         });
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Ошибка: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Ошибка: ${e.message}</td></tr>`;
+    }
+}
+
+async function toggleReviewApproval(id, isApproved) {
+    try {
+        await To2RentApi.updateReviewStatus(id, isApproved);
+        showToast('Отзыв обновлен', isApproved ? 'Отзыв одобрен и опубликован на сайте' : 'Отзыв скрыт от пользователей', 'success');
+        await loadReviewsTable();
+        await loadKpis();
+    } catch (e) {
+        showToast('Ошибка', e.message, 'error');
     }
 }
 
@@ -380,6 +575,52 @@ async function deleteReviewItem(id) {
     }
 }
 
+// ==========================================================================
+// 8. Users Management
+// ==========================================================================
+async function loadUsersTable() {
+    const tbody = document.getElementById('usersTableBody');
+    const countEl = document.getElementById('tabCountUsers');
+    if (!tbody) return;
+
+    try {
+        const users = await To2RentApi.getAllUsers();
+        if (countEl) countEl.textContent = users?.length || 0;
+
+        if (!users || users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px;">Пользователей нет</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        users.forEach(u => {
+            const tr = document.createElement('tr');
+            const isAdmin = u.role === 'Admin' || u.role === 'admin';
+
+            tr.innerHTML = `
+                <td><strong>#${u.id}</strong></td>
+                <td><strong>${escapeHtml(u.username)}</strong></td>
+                <td>${escapeHtml(u.email)}</td>
+                <td>${escapeHtml(u.fullName || '-')}</td>
+                <td>${escapeHtml(u.phone || '-')}</td>
+                <td>
+                    <span class="role-badge ${isAdmin ? 'role-badge--admin' : 'role-badge--client'}">
+                        ${isAdmin ? 'Администратор' : 'Клиент'}
+                    </span>
+                </td>
+                <td>${formatDateShort(u.createdAt)}</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Ошибка: ${e.message}</td></tr>`;
+    }
+}
+
+// ==========================================================================
+// Helpers
+// ==========================================================================
 function formatDateShort(iso) {
     if (!iso) return '-';
     try {
@@ -390,11 +631,21 @@ function formatDateShort(iso) {
     }
 }
 
+function debounce(func, delay) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
 window.loadAllAdminData = loadAllAdminData;
 window.changeBookingStatus = changeBookingStatus;
 window.deleteBookingItem = deleteBookingItem;
 window.toggleInquiryStatus = toggleInquiryStatus;
 window.deleteInquiryItem = deleteInquiryItem;
 window.deleteCatalogItem = deleteCatalogItem;
-window.openAddPropertyModal = openAddPropertyModal;
+window.openPropertyModal = openPropertyModal;
+window.openPropertyModalForEdit = openPropertyModalForEdit;
+window.toggleReviewApproval = toggleReviewApproval;
 window.deleteReviewItem = deleteReviewItem;

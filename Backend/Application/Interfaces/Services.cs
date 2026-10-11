@@ -27,7 +27,16 @@ public interface IReviewService
 {
     Task<IEnumerable<Review>> GetReviewsAsync(bool onlyApproved = true);
     Task<Review> CreateReviewAsync(CreateReviewDto dto);
+    Task<Review?> ToggleApprovalAsync(int id, bool isApproved);
     Task<bool> DeleteReviewAsync(int id);
+}
+
+public interface IAuthService
+{
+    Task<AuthResponseDto> RegisterAsync(RegisterDto dto);
+    Task<AuthResponseDto> LoginAsync(LoginDto dto);
+    Task<UserDto?> GetCurrentUserAsync(int userId);
+    Task<IEnumerable<UserDto>> GetAllUsersAsync();
 }
 
 public interface IInquiryService

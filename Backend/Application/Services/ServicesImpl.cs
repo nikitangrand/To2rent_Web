@@ -2,6 +2,7 @@ using Backend.Application.Interfaces;
 using Backend.Domain.DTOs;
 using Backend.Domain.Events;
 using Backend.Infrastructure.Messaging;
+using Backend.Infrastructure.Security;
 using Backend.Models;
 using Microsoft.Extensions.Options;
 
@@ -234,6 +235,15 @@ public class ReviewService : IReviewService
         return await _repository.AddAsync(review);
     }
 
+    public async Task<Review?> ToggleApprovalAsync(int id, bool isApproved)
+    {
+        var review = await _repository.GetByIdAsync(id);
+        if (review == null) return null;
+
+        review.IsApproved = isApproved;
+        return await _repository.UpdateAsync(review);
+    }
+
     public async Task<bool> DeleteReviewAsync(int id)
     {
         return await _repository.DeleteAsync(id);
@@ -353,3 +363,81 @@ public class StatsService : IStatsService
         };
     }
 }
+
+public class AuthService : IAuthService
+{
+    private readonly IUserRepository _userRepo;
+
+    public AuthService(IUserRepository userRepo)
+    {
+        _userRepo = userRepo;
+    }
+
+    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
+    {
+        if (await _userRepo.ExistsAsync(dto.Username, dto.Email))
+        {
+            throw new InvalidOperationException("Пользователь с таким логином или email уже существует.");
+        }
+
+        var user = new User
+        {
+            Username = dto.Username.Trim(),
+            Email = dto.Email.Trim().ToLower(),
+            PasswordHash = PasswordHasher.HashPassword(dto.Password),
+            FullName = string.IsNullOrWhiteSpace(dto.FullName) ? dto.Username : dto.FullName.Trim(),
+            Phone = dto.Phone?.Trim() ?? string.Empty,
+            Role = string.Equals(dto.Role, "Admin", StringComparison.OrdinalIgnoreCase) ? "Admin" : "Client",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var created = await _userRepo.AddAsync(user);
+        var token = JwtTokenGenerator.GenerateToken(created);
+
+        return new AuthResponseDto
+        {
+            Token = token,
+            User = MapToUserDto(created)
+        };
+    }
+
+    public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
+    {
+        var user = await _userRepo.GetByUsernameOrEmailAsync(dto.UsernameOrEmail);
+        if (user == null || !PasswordHasher.VerifyPassword(dto.Password, user.PasswordHash))
+        {
+            throw new UnauthorizedAccessException("Неверный логин или пароль.");
+        }
+
+        var token = JwtTokenGenerator.GenerateToken(user);
+        return new AuthResponseDto
+        {
+            Token = token,
+            User = MapToUserDto(user)
+        };
+    }
+
+    public async Task<UserDto?> GetCurrentUserAsync(int userId)
+    {
+        var user = await _userRepo.GetByIdAsync(userId);
+        return user == null ? null : MapToUserDto(user);
+    }
+
+    public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
+    {
+        var users = await _userRepo.GetAllAsync();
+        return users.Select(MapToUserDto);
+    }
+
+    private static UserDto MapToUserDto(User u) => new()
+    {
+        Id = u.Id,
+        Username = u.Username,
+        Email = u.Email,
+        FullName = u.FullName,
+        Phone = u.Phone,
+        Role = u.Role,
+        CreatedAt = u.CreatedAt
+    };
+}
+
