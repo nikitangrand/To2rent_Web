@@ -190,6 +190,19 @@ public class BookingRepository : IBookingRepository
             .Where(b => b.Status == "Confirmed" || b.Status == "Completed")
             .SumAsync(b => b.TotalPrice);
     }
+
+    public async Task<IEnumerable<Booking>> GetByUserIdAsync(int userId, string? email = null, string? phone = null)
+    {
+        var eLower = email?.Trim().ToLower();
+        var pClean = phone?.Trim();
+
+        return await _context.Bookings
+            .Where(b => b.UserId == userId ||
+                        (!string.IsNullOrEmpty(eLower) && b.ClientEmail != null && b.ClientEmail.ToLower() == eLower) ||
+                        (!string.IsNullOrEmpty(pClean) && b.ClientPhone == pClean))
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync();
+    }
 }
 
 public class ReviewRepository : IReviewRepository
@@ -343,6 +356,13 @@ public class UserRepository : IUserRepository
     public async Task<User> AddAsync(User user)
     {
         _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        return user;
+    }
+
+    public async Task<User> UpdateAsync(User user)
+    {
+        _context.Users.Update(user);
         await _context.SaveChangesAsync();
         return user;
     }

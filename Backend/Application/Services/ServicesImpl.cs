@@ -138,7 +138,7 @@ public class BookingService : IBookingService
                 if (totalPrice <= 0)
                 {
                     var days = (int)Math.Max(1, (checkOut - checkIn).TotalDays);
-                    var dailyRate = prop.Price / 30m;
+                    var dailyRate = prop.Price > 5000 ? prop.Price / 30m : prop.Price;
                     totalPrice = Math.Round(dailyRate * days, 2);
                 }
             }
@@ -146,6 +146,7 @@ public class BookingService : IBookingService
 
         var booking = new Booking
         {
+            UserId = dto.UserId,
             PropertyId = dto.PropertyId,
             PropertyTitle = propertyTitle ?? "Недвижимость TO2RENT",
             ClientName = dto.ClientName,
@@ -204,6 +205,36 @@ public class BookingService : IBookingService
     public async Task<bool> DeleteBookingAsync(int id)
     {
         return await _bookingRepo.DeleteAsync(id);
+    }
+
+    public async Task<IEnumerable<Booking>> GetUserBookingsAsync(int userId, string? email = null, string? phone = null)
+    {
+        return await _bookingRepo.GetByUserIdAsync(userId, email, phone);
+    }
+
+    public async Task<Booking?> CancelBookingAsync(int id, int? requestingUserId = null)
+    {
+        var booking = await _bookingRepo.GetByIdAsync(id);
+        if (booking == null) return null;
+
+        if (requestingUserId.HasValue && booking.UserId.HasValue && booking.UserId.Value != requestingUserId.Value)
+        {
+            throw new UnauthorizedAccessException("У вас нет прав на отмену этой брони.");
+        }
+
+        var oldStatus = booking.Status;
+        booking.Status = "Cancelled";
+        var updated = await _bookingRepo.UpdateAsync(booking);
+
+        await _eventPublisher.PublishAsync(_kafkaSettings.BookingTopic, updated.Id.ToString(), new BookingStatusChangedEvent
+        {
+            BookingId = updated.Id,
+            OldStatus = oldStatus,
+            NewStatus = "Cancelled",
+            ChangedAt = DateTime.UtcNow
+        });
+
+        return updated;
     }
 }
 
@@ -427,6 +458,55 @@ public class AuthService : IAuthService
     {
         var users = await _userRepo.GetAllAsync();
         return users.Select(MapToUserDto);
+    }
+
+    public async Task<UserDto> UpdateProfileAsync(int userId, UpdateProfileDto dto)
+    {
+        var user = await _userRepo.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new KeyNotFoundException("Пользователь не найден.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.FullName))
+        {
+            user.FullName = dto.FullName.Trim();
+        }
+
+        if (dto.Phone != null)
+        {
+            user.Phone = dto.Phone.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Email))
+        {
+            var newEmail = dto.Email.Trim().ToLower();
+            if (newEmail != user.Email.ToLower())
+            {
+                var existing = await _userRepo.GetByUsernameOrEmailAsync(newEmail);
+                if (existing != null && existing.Id != user.Id)
+                {
+                    throw new InvalidOperationException("Email уже используется другим аккаунтом.");
+                }
+                user.Email = newEmail;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.NewPassword))
+        {
+            if (string.IsNullOrWhiteSpace(dto.CurrentPassword) || !PasswordHasher.VerifyPassword(dto.CurrentPassword, user.PasswordHash))
+            {
+                throw new UnauthorizedAccessException("Текущий пароль указан неверно.");
+            }
+            if (dto.NewPassword.Length < 6)
+            {
+                throw new InvalidOperationException("Новый пароль должен содержать не менее 6 символов.");
+            }
+            user.PasswordHash = PasswordHasher.HashPassword(dto.NewPassword);
+        }
+
+        var updated = await _userRepo.UpdateAsync(user);
+        return MapToUserDto(updated);
     }
 
     private static UserDto MapToUserDto(User u) => new()

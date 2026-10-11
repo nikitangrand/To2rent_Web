@@ -45,6 +45,24 @@ public static class DbInitializer
         }
         catch { }
 
+        // Ensure Bookings table has UserId column
+        try
+        {
+            if (context.Database.IsNpgsql())
+            {
+                context.Database.ExecuteSqlRaw(@"ALTER TABLE ""Bookings"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;");
+            }
+            else
+            {
+                try
+                {
+                    context.Database.ExecuteSqlRaw(@"ALTER TABLE ""Bookings"" ADD COLUMN ""UserId"" INTEGER NULL;");
+                }
+                catch { }
+            }
+        }
+        catch { }
+
         if (!context.Users.Any())
         {
             var adminUser = new User

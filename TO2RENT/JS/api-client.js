@@ -194,6 +194,29 @@ const To2RentApi = (() => {
             });
         },
 
+        getUserBookings(userId, email = null, phone = null) {
+            const params = new URLSearchParams();
+            if (email) params.append('email', email);
+            if (phone) params.append('phone', phone);
+            const qs = params.toString() ? `?${params.toString()}` : '';
+            return request(`/api/bookings/user/${userId}${qs}`);
+        },
+
+        cancelBooking(id, userId = null) {
+            const qs = userId ? `?userId=${userId}` : '';
+            return request(`/api/bookings/${id}/cancel${qs}`, {
+                method: 'POST'
+            });
+        },
+
+        updateProfile(data, userId = null) {
+            const qs = userId ? `?userId=${userId}` : '';
+            return request(`/api/auth/profile${qs}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+        },
+
         // Reviews
         getReviews(onlyApproved = true) {
             return request(`/api/reviews?onlyApproved=${onlyApproved}`);

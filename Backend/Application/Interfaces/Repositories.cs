@@ -24,6 +24,7 @@ public interface IBookingRepository
     Task<bool> DeleteAsync(int id);
     Task<int> CountAsync(string? status = null);
     Task<decimal> GetTotalRevenueAsync();
+    Task<IEnumerable<Booking>> GetByUserIdAsync(int userId, string? email = null, string? phone = null);
 }
 
 public interface IReviewRepository
@@ -53,6 +54,7 @@ public interface IUserRepository
     Task<User?> GetByUsernameOrEmailAsync(string identifier);
     Task<bool> ExistsAsync(string username, string email);
     Task<User> AddAsync(User user);
+    Task<User> UpdateAsync(User user);
     Task<IEnumerable<User>> GetAllAsync();
 }
 

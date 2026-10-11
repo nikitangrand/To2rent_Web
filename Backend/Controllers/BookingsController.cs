@@ -55,6 +55,28 @@ public class BookingsController : ControllerBase
         return Ok(updated);
     }
 
+    [HttpGet("user/{userId}")]
+    public async Task<ActionResult<IEnumerable<Booking>>> GetUserBookings(int userId, [FromQuery] string? email, [FromQuery] string? phone)
+    {
+        var result = await _bookingService.GetUserBookingsAsync(userId, email, phone);
+        return Ok(result);
+    }
+
+    [HttpPost("{id}/cancel")]
+    public async Task<ActionResult<Booking>> CancelBooking(int id, [FromQuery] int? userId)
+    {
+        try
+        {
+            var updated = await _bookingService.CancelBookingAsync(id, userId);
+            if (updated == null) return NotFound(new { message = $"Бронь #{id} не найдена" });
+            return Ok(updated);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteBooking(int id)
     {

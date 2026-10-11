@@ -36,6 +36,7 @@ public class PropertyFilterDto
 
 public class CreateBookingDto
 {
+    public int? UserId { get; set; }
     public int? PropertyId { get; set; }
     public string? PropertyTitle { get; set; }
 
@@ -132,5 +133,15 @@ public class AuthResponseDto
 {
     public string Token { get; set; } = string.Empty;
     public UserDto User { get; set; } = null!;
+}
+
+public class UpdateProfileDto
+{
+    public string? FullName { get; set; }
+    public string? Phone { get; set; }
+    [EmailAddress]
+    public string? Email { get; set; }
+    public string? CurrentPassword { get; set; }
+    public string? NewPassword { get; set; }
 }
 

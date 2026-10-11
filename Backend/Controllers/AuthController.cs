@@ -74,4 +74,46 @@ public class AuthController : ControllerBase
         var users = await _authService.GetAllUsersAsync();
         return Ok(users);
     }
+
+    [HttpPut("profile")]
+    public async Task<ActionResult<UserDto>> UpdateProfile([FromBody] UpdateProfileDto dto, [FromQuery] int? userId)
+    {
+        int targetUserId = 0;
+        var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(idClaim) && int.TryParse(idClaim, out var claimId))
+        {
+            targetUserId = claimId;
+        }
+        else if (userId.HasValue && userId.Value > 0)
+        {
+            targetUserId = userId.Value;
+        }
+
+        if (targetUserId == 0)
+        {
+            return Unauthorized(new { message = "Пользователь не идентифицирован" });
+        }
+
+        try
+        {
+            var updated = await _authService.UpdateProfileAsync(targetUserId, dto);
+            return Ok(updated);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Ошибка обновления профиля: " + ex.Message });
+        }
+    }
 }

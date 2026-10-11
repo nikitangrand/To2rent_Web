@@ -81,8 +81,13 @@ function renderAuthNavbar() {
                     ${isAdmin ? 'Администратор' : 'Клиент'}
                 </span>
             </div>
+            <button type="button" class="btn-nav-auth" id="navCabinetBtn">Личный кабинет</button>
             <button type="button" class="btn-nav-logout" id="navLogoutBtn">Выйти</button>
         `;
+
+        document.getElementById('navCabinetBtn')?.addEventListener('click', () => {
+            openClientDashboardModal();
+        });
 
         document.getElementById('navLogoutBtn')?.addEventListener('click', () => {
             To2RentApi.logout();
@@ -483,7 +488,9 @@ async function handleBookingSubmit(e) {
     const priceText = document.getElementById('bookingTotalPrice').textContent.replace(/[^\d]/g, '');
     const totalPrice = parseFloat(priceText) || 0;
 
+    const user = To2RentApi.getCurrentUser();
     const payload = {
+        userId: user?.id || null,
         propertyId: currentBookingProperty?.id || null,
         propertyTitle: currentBookingProperty?.title || 'Недвижимость TO2RENT',
         clientName,
@@ -781,9 +788,347 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+function formatDateRussian(isoString) {
+    if (!isoString) return '';
+    try {
+        const d = new Date(isoString);
+        return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (_) {
+        return String(isoString).split('T')[0];
+    }
+}
+
+// ==========================================================================
+// 6. Client Dashboard System (Личный кабинет: Мои бронирования и Профиль)
+// ==========================================================================
+let clientDashboardModal = null;
+let currentClientBookings = [];
+let currentBookingFilter = '';
+
+function initClientDashboardModal() {
+    if (document.getElementById('clientDashboardOverlay')) return;
+
+    const modalMarkup = `
+    <div class="modal-overlay" id="clientDashboardOverlay">
+        <div class="modal-dialog client-dashboard-dialog">
+            <button class="modal-close-btn" id="clientDashboardClose" aria-label="Закрыть">&times;</button>
+            <h2 class="modal-title">Личный кабинет</h2>
+            <p class="modal-subtitle" id="clientDashboardSubtitle">Управление вашими бронированиями и профилем</p>
+
+            <div class="client-tabs">
+                <button type="button" class="client-tab-btn active" id="tabBtnMyBookings">Мои бронирования (<span id="userBookingsCount">0</span>)</button>
+                <button type="button" class="client-tab-btn" id="tabBtnMyProfile">Мой профиль</button>
+            </div>
+
+            <!-- TAB 1: BOOKINGS -->
+            <div class="client-tab-pane active" id="paneMyBookings">
+                <div class="client-bookings-filters" id="clientBookingsFilters">
+                    <button type="button" class="client-filter-chip active" data-filter="">Все</button>
+                    <button type="button" class="client-filter-chip" data-filter="Pending">Ожидают</button>
+                    <button type="button" class="client-filter-chip" data-filter="Confirmed">Подтверждены</button>
+                    <button type="button" class="client-filter-chip" data-filter="Cancelled">Отменены</button>
+                </div>
+                <div class="client-bookings-container" id="userBookingsList">
+                    <div class="client-loading-spinner">Загрузка бронирований...</div>
+                </div>
+            </div>
+
+            <!-- TAB 2: PROFILE -->
+            <div class="client-tab-pane" id="paneMyProfile" style="display: none;">
+                <form id="clientProfileForm">
+                    <div class="form-grid">
+                        <div>
+                            <label class="input-label" for="profUsername">Логин</label>
+                            <input type="text" id="profUsername" class="input-field" disabled readonly style="background: #f7f7f7; color: #555;">
+                        </div>
+                        <div>
+                            <label class="input-label" for="profRole">Роль в системе</label>
+                            <input type="text" id="profRole" class="input-field" disabled readonly style="background: #f7f7f7; color: #555;">
+                        </div>
+                        <div class="form-group-full">
+                            <label class="input-label" for="profFullName">ФИО *</label>
+                            <input type="text" id="profFullName" class="input-field" placeholder="Иван Иванов" required>
+                        </div>
+                        <div>
+                            <label class="input-label" for="profPhone">Контактный телефон *</label>
+                            <input type="tel" id="profPhone" class="input-field" placeholder="+7 (999) 000-00-00" required>
+                        </div>
+                        <div>
+                            <label class="input-label" for="profEmail">Электронная почта *</label>
+                            <input type="email" id="profEmail" class="input-field" placeholder="example@mail.ru" required>
+                        </div>
+                    </div>
+
+                    <div class="profile-section-divider">
+                        <h4>Смена пароля (необязательно)</h4>
+                    </div>
+
+                    <div class="form-grid">
+                        <div>
+                            <label class="input-label" for="profCurrentPassword">Текущий пароль</label>
+                            <input type="password" id="profCurrentPassword" class="input-field" placeholder="Введите текущий пароль" autocomplete="current-password">
+                        </div>
+                        <div>
+                            <label class="input-label" for="profNewPassword">Новый пароль</label>
+                            <input type="password" id="profNewPassword" class="input-field" placeholder="Минимум 6 символов" minlength="6" autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="modal-submit-btn" id="profSubmitBtn" style="margin-top: 20px;">Сохранить изменения</button>
+                </form>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalMarkup);
+    clientDashboardModal = document.getElementById('clientDashboardOverlay');
+
+    const closeBtn = document.getElementById('clientDashboardClose');
+    closeBtn?.addEventListener('click', closeClientDashboardModal);
+
+    clientDashboardModal?.addEventListener('click', (e) => {
+        if (e.target === clientDashboardModal) closeClientDashboardModal();
+    });
+
+    // Tab buttons
+    document.getElementById('tabBtnMyBookings')?.addEventListener('click', () => switchClientTab('bookings'));
+    document.getElementById('tabBtnMyProfile')?.addEventListener('click', () => switchClientTab('profile'));
+
+    // Filter chips
+    document.querySelectorAll('#clientBookingsFilters .client-filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('#clientBookingsFilters .client-filter-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentBookingFilter = chip.getAttribute('data-filter') || '';
+            applyClientBookingsFilter();
+        });
+    });
+
+    // Profile form
+    document.getElementById('clientProfileForm')?.addEventListener('submit', handleClientProfileSubmit);
+}
+
+function openClientDashboardModal(initialTab = 'bookings') {
+    const user = To2RentApi.getCurrentUser();
+    if (!user) {
+        showToast('Вход в систему', 'Для доступа к личному кабинету войдите в аккаунт.', 'info');
+        openAuthModal('login');
+        return;
+    }
+
+    initClientDashboardModal();
+    switchClientTab(initialTab);
+    loadClientDashboardData();
+    clientDashboardModal?.classList.add('active');
+}
+
+function closeClientDashboardModal() {
+    clientDashboardModal?.classList.remove('active');
+}
+
+function switchClientTab(tabName) {
+    const tabBookingsBtn = document.getElementById('tabBtnMyBookings');
+    const tabProfileBtn = document.getElementById('tabBtnMyProfile');
+    const paneBookings = document.getElementById('paneMyBookings');
+    const paneProfile = document.getElementById('paneMyProfile');
+
+    if (tabName === 'profile') {
+        tabBookingsBtn?.classList.remove('active');
+        tabProfileBtn?.classList.add('active');
+        if (paneBookings) paneBookings.style.display = 'none';
+        if (paneProfile) paneProfile.style.display = 'block';
+    } else {
+        tabBookingsBtn?.classList.add('active');
+        tabProfileBtn?.classList.remove('active');
+        if (paneBookings) paneBookings.style.display = 'block';
+        if (paneProfile) paneProfile.style.display = 'none';
+    }
+}
+
+async function loadClientDashboardData() {
+    const user = To2RentApi.getCurrentUser();
+    if (!user) return;
+
+    // Fill profile fields
+    const usernameEl = document.getElementById('profUsername');
+    const roleEl = document.getElementById('profRole');
+    const fullNameEl = document.getElementById('profFullName');
+    const phoneEl = document.getElementById('profPhone');
+    const emailEl = document.getElementById('profEmail');
+
+    if (usernameEl) usernameEl.value = user.username || '';
+    if (roleEl) roleEl.value = user.role === 'Admin' ? 'Администратор' : 'Клиент';
+    if (fullNameEl) fullNameEl.value = user.fullName || user.username || '';
+    if (phoneEl) phoneEl.value = user.phone || '';
+    if (emailEl) emailEl.value = user.email || '';
+
+    // Load bookings
+    const listContainer = document.getElementById('userBookingsList');
+    if (listContainer) {
+        listContainer.innerHTML = '<div class="client-loading-spinner">Загрузка бронирований...</div>';
+    }
+
+    try {
+        const bookings = await To2RentApi.getUserBookings(user.id, user.email, user.phone);
+        currentClientBookings = bookings || [];
+        const countEl = document.getElementById('userBookingsCount');
+        if (countEl) countEl.textContent = currentClientBookings.length;
+        applyClientBookingsFilter();
+    } catch (err) {
+        if (listContainer) {
+            listContainer.innerHTML = `<div class="client-empty-bookings"><p>Не удалось загрузить бронирования: ${escapeHtml(err.message)}</p></div>`;
+        }
+    }
+}
+
+function applyClientBookingsFilter() {
+    const listContainer = document.getElementById('userBookingsList');
+    if (!listContainer) return;
+
+    let filtered = currentClientBookings;
+    if (currentBookingFilter) {
+        filtered = filtered.filter(b => b.status && b.status.toLowerCase() === currentBookingFilter.toLowerCase());
+    }
+
+    renderUserBookings(filtered, listContainer);
+}
+
+function renderUserBookings(bookings, container) {
+    if (!bookings || bookings.length === 0) {
+        container.innerHTML = `
+            <div class="client-empty-bookings">
+                <h4>У вас пока нет оформленных бронирований</h4>
+                <p>Выберите понравившиеся апартаменты или дом в каталоге и оформите аренду онлайн.</p>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <a href="/Html-Pages/apartments.html" class="modal-submit-btn" style="width: auto; padding: 8px 20px; text-decoration: none;">Квартиры</a>
+                    <a href="/Html-Pages/houses.html" class="modal-submit-btn" style="width: auto; padding: 8px 20px; text-decoration: none; background: #333;">Дома</a>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    bookings.forEach(b => {
+        const item = document.createElement('div');
+        item.className = 'client-booking-item';
+
+        const statusMap = {
+            'pending': { label: 'Ожидает подтверждения', cls: 'status--pending' },
+            'confirmed': { label: 'Подтверждено', cls: 'status--confirmed' },
+            'cancelled': { label: 'Отменено', cls: 'status--cancelled' },
+            'completed': { label: 'Завершено', cls: 'status--completed' }
+        };
+        const statusInfo = statusMap[b.status?.toLowerCase()] || { label: b.status, cls: 'status--pending' };
+        const canCancel = b.status?.toLowerCase() === 'pending' || b.status?.toLowerCase() === 'confirmed';
+
+        const inDate = new Date(b.checkInDate);
+        const outDate = new Date(b.checkOutDate);
+        const days = Math.max(1, Math.round((outDate - inDate) / (1000 * 60 * 60 * 24)));
+
+        item.innerHTML = `
+            <div class="booking-item-header">
+                <div>
+                    <h4 class="booking-item-title">${escapeHtml(b.propertyTitle)}</h4>
+                    <div class="booking-item-meta">Заявка #${b.id} &bull; ${formatDateRussian(b.createdAt)}</div>
+                </div>
+                <span class="client-status-badge ${statusInfo.cls}">${statusInfo.label}</span>
+            </div>
+            <div class="booking-item-body">
+                <div class="booking-item-param">
+                    <span class="param-label">Даты проживания:</span>
+                    <span class="param-value">${formatDateRussian(b.checkInDate)} — ${formatDateRussian(b.checkOutDate)} (${days} ${getDaysPlural(days)})</span>
+                </div>
+                <div class="booking-item-param">
+                    <span class="param-label">Количество гостей:</span>
+                    <span class="param-value">${b.guestsCount}</span>
+                </div>
+                <div class="booking-item-param">
+                    <span class="param-label">Итоговая сумма:</span>
+                    <span class="param-value booking-item-price">${formatNumber(b.totalPrice)} $</span>
+                </div>
+                ${b.notes ? `
+                <div class="booking-item-param" style="grid-column: 1 / -1;">
+                    <span class="param-label">Пожелания:</span>
+                    <span class="param-value">${escapeHtml(b.notes)}</span>
+                </div>` : ''}
+            </div>
+            <div class="booking-item-footer">
+                ${canCancel ? `
+                    <button type="button" class="btn-client-cancel" onclick="handleClientCancelBooking(${b.id})">Отменить бронь</button>
+                ` : `
+                    <span class="booking-status-notice">${b.status?.toLowerCase() === 'cancelled' ? 'Заявка отменена' : 'Проживание завершено'}</span>
+                `}
+            </div>
+        `;
+
+        container.appendChild(item);
+    });
+}
+
+async function handleClientCancelBooking(bookingId) {
+    if (!confirm(`Вы действительно хотите отменить заявку на бронирование #${bookingId}?`)) {
+        return;
+    }
+
+    const user = To2RentApi.getCurrentUser();
+    try {
+        await To2RentApi.cancelBooking(bookingId, user?.id || null);
+        showToast('Бронирование отменено', `Заявка #${bookingId} успешно переведена в статус «Отменено».`, 'info');
+        loadClientDashboardData();
+    } catch (err) {
+        showToast('Ошибка отмены', err.message || 'Не удалось отменить бронирование.', 'error');
+    }
+}
+
+async function handleClientProfileSubmit(e) {
+    e.preventDefault();
+    const submitBtn = document.getElementById('profSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Сохранение...';
+
+    const user = To2RentApi.getCurrentUser();
+    if (!user) return;
+
+    const fullName = document.getElementById('profFullName').value.trim();
+    const phone = document.getElementById('profPhone').value.trim();
+    const email = document.getElementById('profEmail').value.trim();
+    const currentPassword = document.getElementById('profCurrentPassword').value;
+    const newPassword = document.getElementById('profNewPassword').value;
+
+    const payload = {
+        fullName,
+        phone,
+        email,
+        currentPassword: currentPassword || null,
+        newPassword: newPassword || null
+    };
+
+    try {
+        const updatedUser = await To2RentApi.updateProfile(payload, user.id);
+        const stored = To2RentApi.getCurrentUser();
+        const merged = { ...stored, ...updatedUser };
+        localStorage.setItem('to2rent_user', JSON.stringify(merged));
+        renderAuthNavbar();
+
+        document.getElementById('profCurrentPassword').value = '';
+        document.getElementById('profNewPassword').value = '';
+
+        showToast('Профиль обновлен', 'Ваши персональные данные успешно сохранены.', 'success');
+    } catch (err) {
+        showToast('Ошибка сохранения', err.message || 'Не удалось обновить профиль.', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Сохранить изменения';
+    }
+}
+
 window.showToast = showToast;
 window.openBookingModal = openBookingModal;
 window.openManagerModal = openManagerModal;
 window.openAuthModal = openAuthModal;
 window.closeAuthModal = closeAuthModal;
 window.renderAuthNavbar = renderAuthNavbar;
+window.openClientDashboardModal = openClientDashboardModal;
+window.closeClientDashboardModal = closeClientDashboardModal;
+window.handleClientCancelBooking = handleClientCancelBooking;
