@@ -1,4 +1,4 @@
-// JS/houses.js - Dynamic & Filterable Houses Loader
+// JS/houses.js - Dynamic & Filterable Houses Loader (Search, Sort, Quick Tags, URL Sync) - Zero Emojis
 
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('housesContainer');
@@ -9,12 +9,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial load, reading query params
     const urlParams = new URLSearchParams(window.location.search);
-    const initialSearch = urlParams.get('search') || '';
-    if (initialSearch) {
+    if (urlParams.get('search')) {
         const searchInput = document.getElementById('filterHouseSearch');
-        if (searchInput) searchInput.value = initialSearch;
+        if (searchInput) searchInput.value = urlParams.get('search');
+    }
+    if (urlParams.get('city')) {
+        const citySelect = document.getElementById('filterHouseCity');
+        if (citySelect) citySelect.value = urlParams.get('city');
+    }
+    if (urlParams.get('floors')) {
+        const floorsSelect = document.getElementById('filterHouseFloors');
+        if (floorsSelect) floorsSelect.value = urlParams.get('floors');
+    }
+    if (urlParams.get('minPrice')) {
+        const minPriceInput = document.getElementById('filterHouseMinPrice');
+        if (minPriceInput) minPriceInput.value = urlParams.get('minPrice');
+    }
+    if (urlParams.get('maxPrice')) {
+        const maxPriceInput = document.getElementById('filterHouseMaxPrice');
+        if (maxPriceInput) maxPriceInput.value = urlParams.get('maxPrice');
+    }
+    if (urlParams.get('sort')) {
+        const sortSelect = document.getElementById('filterHouseSort');
+        if (sortSelect) sortSelect.value = urlParams.get('sort');
     }
 
+    syncHouseQuickTagChips();
     loadHouses();
 });
 
@@ -60,16 +80,34 @@ function insertHousesToolbar(container) {
             <div class="filter-item">
                 <label class="filter-label" for="filterHouseSort">Сортировка</label>
                 <select id="filterHouseSort" class="filter-control">
-                    <option value="">По умолчанию</option>
+                    <option value="">По умолчанию (Новые)</option>
                     <option value="price_asc">Сначала дешевле</option>
                     <option value="price_desc">Сначала дороже</option>
-                    <option value="area_desc">По площади участка</option>
+                    <option value="area_desc">По площади участка (Больше)</option>
+                    <option value="area_asc">По площади участка (Меньше)</option>
+                    <option value="title_asc">По названию (А — Я)</option>
                 </select>
             </div>
 
             <div class="filter-item" style="justify-content: flex-end;">
                 <button type="button" class="btn-filter-reset" id="filterHouseResetBtn">Сбросить</button>
             </div>
+        </div>
+
+        <div class="quick-tags-row" id="houseQuickTagsRow">
+            <span class="quick-tags-label">Быстрый выбор:</span>
+            <button type="button" class="quick-tag-chip active" data-type="city" data-val="">Все города</button>
+            <button type="button" class="quick-tag-chip" data-type="city" data-val="Москва">Москва</button>
+            <button type="button" class="quick-tag-chip" data-type="city" data-val="Минск">Минск</button>
+            <button type="button" class="quick-tag-chip" data-type="city" data-val="Лондон">Лондон</button>
+            <button type="button" class="quick-tag-chip" data-type="city" data-val="Лос Анджелес">Лос Анджелес</button>
+            <span class="quick-tags-separator">|</span>
+            <button type="button" class="quick-tag-chip" data-type="price-range" data-min="" data-max="500">До 500 $</button>
+            <button type="button" class="quick-tag-chip" data-type="price-range" data-min="500" data-max="1000">500 — 1000 $</button>
+            <button type="button" class="quick-tag-chip" data-type="price-range" data-min="1000" data-max="">От 1000 $</button>
+            <span class="quick-tags-separator">|</span>
+            <button type="button" class="quick-tag-chip" data-type="floors" data-val="2">2 этажа</button>
+            <button type="button" class="quick-tag-chip" data-type="floors" data-val="3">3 этажа</button>
         </div>
 
         <div class="catalog-status-bar">
@@ -81,13 +119,44 @@ function insertHousesToolbar(container) {
     container.parentNode.insertBefore(toolbar, container);
 
     // Bind event listeners
-    const triggerSearch = debounce(() => loadHouses(), 250);
+    const triggerSearch = debounce(() => {
+        syncHouseQuickTagChips();
+        loadHouses();
+    }, 250);
+
     document.getElementById('filterHouseSearch').addEventListener('input', triggerSearch);
-    document.getElementById('filterHouseCity').addEventListener('change', () => loadHouses());
-    document.getElementById('filterHouseFloors').addEventListener('change', () => loadHouses());
+    document.getElementById('filterHouseCity').addEventListener('change', () => {
+        syncHouseQuickTagChips();
+        loadHouses();
+    });
+    document.getElementById('filterHouseFloors').addEventListener('change', () => {
+        syncHouseQuickTagChips();
+        loadHouses();
+    });
     document.getElementById('filterHouseMinPrice').addEventListener('input', triggerSearch);
     document.getElementById('filterHouseMaxPrice').addEventListener('input', triggerSearch);
     document.getElementById('filterHouseSort').addEventListener('change', () => loadHouses());
+
+    // Quick tag chips binding
+    document.querySelectorAll('#houseQuickTagsRow .quick-tag-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const type = chip.getAttribute('data-type');
+            if (type === 'city') {
+                const val = chip.getAttribute('data-val') || '';
+                document.getElementById('filterHouseCity').value = val;
+            } else if (type === 'floors') {
+                const val = chip.getAttribute('data-val') || '';
+                document.getElementById('filterHouseFloors').value = val;
+            } else if (type === 'price-range') {
+                const min = chip.getAttribute('data-min') || '';
+                const max = chip.getAttribute('data-max') || '';
+                document.getElementById('filterHouseMinPrice').value = min;
+                document.getElementById('filterHouseMaxPrice').value = max;
+            }
+            syncHouseQuickTagChips();
+            loadHouses();
+        });
+    });
 
     document.getElementById('filterHouseResetBtn').addEventListener('click', () => {
         document.getElementById('filterHouseSearch').value = '';
@@ -96,8 +165,42 @@ function insertHousesToolbar(container) {
         document.getElementById('filterHouseMinPrice').value = '';
         document.getElementById('filterHouseMaxPrice').value = '';
         document.getElementById('filterHouseSort').value = '';
+        syncHouseQuickTagChips();
         loadHouses();
     });
+}
+
+function syncHouseQuickTagChips() {
+    const curCity = document.getElementById('filterHouseCity')?.value || '';
+    const curFloors = document.getElementById('filterHouseFloors')?.value || '';
+    const curMin = document.getElementById('filterHouseMinPrice')?.value || '';
+    const curMax = document.getElementById('filterHouseMaxPrice')?.value || '';
+
+    document.querySelectorAll('#houseQuickTagsRow .quick-tag-chip').forEach(chip => {
+        const type = chip.getAttribute('data-type');
+        chip.classList.remove('active');
+        if (type === 'city') {
+            if (chip.getAttribute('data-val') === curCity) chip.classList.add('active');
+        } else if (type === 'floors') {
+            if (chip.getAttribute('data-val') === curFloors) chip.classList.add('active');
+        } else if (type === 'price-range') {
+            const min = chip.getAttribute('data-min') || '';
+            const max = chip.getAttribute('data-max') || '';
+            if (min === curMin && max === curMax) chip.classList.add('active');
+        }
+    });
+}
+
+function updateHousesUrlParams(search, city, floors, minPrice, maxPrice, sort) {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (city) params.set('city', city);
+    if (floors) params.set('floors', floors);
+    if (minPrice) params.set('minPrice', minPrice);
+    if (maxPrice) params.set('maxPrice', maxPrice);
+    if (sort) params.set('sort', sort);
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newUrl);
 }
 
 async function loadHouses() {
@@ -112,6 +215,8 @@ async function loadHouses() {
     const maxPrice = document.getElementById('filterHouseMaxPrice')?.value || '';
     const sort = document.getElementById('filterHouseSort')?.value || '';
 
+    updateHousesUrlParams(search, city, floors, minPrice, maxPrice, sort);
+
     let items = [];
 
     // Fetch from C# API
@@ -120,6 +225,7 @@ async function loadHouses() {
             type: 'house',
             search: search || undefined,
             city: city || undefined,
+            floors: floors ? parseInt(floors, 10) : undefined,
             minPrice: minPrice ? parseFloat(minPrice) : undefined,
             maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
             sort: sort || undefined
@@ -146,7 +252,7 @@ function renderHousesList(items, container, countEl) {
     if (!items || items.length === 0) {
         container.innerHTML = `
             <div class="empty-catalog-message">
-                <h3>Дома и коттеджи по вашему запросу не найдены</h3>
+                <h3>Дома по вашему запросу не найдены</h3>
                 <p>Попробуйте изменить параметры фильтра или сбросить условия поиска.</p>
                 <button class="btn" onclick="document.getElementById('filterHouseResetBtn').click()">Сбросить фильтры</button>
             </div>
@@ -223,14 +329,15 @@ async function loadHousesFromXmlFallback(search, city, floors, minPrice, maxPric
                 id: parseInt(item.getAttribute('id') || '0', 10),
                 title: item.querySelector('title')?.textContent || '',
                 type: 'house',
-                city: item.querySelector('title')?.textContent.replace('Коттедж', '').replace('Modern', '').replace('Семейный', '').replace('Стандарт', '').replace('Элитный', '').trim() || '',
+                city: item.querySelector('title')?.textContent.replace('Коттедж', '').trim() || '',
                 image: item.querySelector('image')?.textContent || '',
                 price: parseFloat(item.querySelector('price')?.textContent || '0'),
                 currency: item.querySelector('price')?.getAttribute('currency') || '$',
                 description: item.querySelector('description')?.textContent || '',
                 detailLink: item.querySelector('detailLink')?.textContent || '',
                 floors: parseInt(item.querySelector('floors')?.textContent || '2', 10),
-                landArea: parseInt(item.querySelector('land_area')?.textContent || '400', 10)
+                area: parseInt(item.querySelector('area')?.textContent || '300', 10),
+                landArea: parseInt(item.querySelector('landArea')?.textContent || '500', 10)
             });
         });
 
@@ -252,7 +359,9 @@ async function loadHousesFromXmlFallback(search, city, floors, minPrice, maxPric
         }
         if (sort === 'price_asc') list.sort((a, b) => a.price - b.price);
         if (sort === 'price_desc') list.sort((a, b) => b.price - a.price);
-        if (sort === 'area_desc') list.sort((a, b) => (b.landArea || 0) - (a.landArea || 0));
+        if (sort === 'area_desc') list.sort((a, b) => (b.landArea || b.area) - (a.landArea || a.area));
+        if (sort === 'area_asc') list.sort((a, b) => (a.landArea || a.area) - (b.landArea || b.area));
+        if (sort === 'title_asc') list.sort((a, b) => a.title.localeCompare(b.title, 'ru'));
 
         return list;
     } catch (e) {
@@ -265,6 +374,6 @@ function debounce(func, delay) {
     let timeout;
     return (...args) => {
         clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
+        timeout = setTimeout(() => func(...args), delay);
     };
 }

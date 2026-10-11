@@ -1577,3 +1577,60 @@ textarea.input-field {
   font-size: 14px;
   margin: 0 0 16px 0;
 }
+
+
+/* ==========================================================================
+   Quick filter tags row (Zero Emojis, Brutalist)
+   ========================================================================== */
+.quick-tags-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.quick-tags-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #777;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.quick-tag-chip {
+  padding: 5px 12px;
+  background: #f7f7f7;
+  border: 1px solid #dcdcdc;
+  border-radius: 0;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.quick-tag-chip:hover {
+  background: #ebebeb;
+  border-color: #999;
+  color: #000;
+}
+
+.quick-tag-chip.active {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.quick-tags-separator {
+  color: #ccc;
+  font-size: 12px;
+  margin: 0 4px;
+  user-select: none;
+}

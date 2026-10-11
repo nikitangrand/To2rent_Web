@@ -1,4 +1,4 @@
-// JS/apartments.js - Dynamic & Filterable Apartments Loader
+// JS/apartments.js - Dynamic & Filterable Apartments Loader (Search, Sort, Quick Tags, URL Sync) - Zero Emojis
 
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('apartmentsContainer');
@@ -7,14 +7,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Insert Filter Toolbar above apartmentsContainer
     insertApartmentsToolbar(container);
 
-    // Initial load, reading query params (e.g. ?search=Москва)
+    // Initial load, reading query params
     const urlParams = new URLSearchParams(window.location.search);
-    const initialSearch = urlParams.get('search') || '';
-    if (initialSearch) {
+    if (urlParams.get('search')) {
         const searchInput = document.getElementById('filterApartSearch');
-        if (searchInput) searchInput.value = initialSearch;
+        if (searchInput) searchInput.value = urlParams.get('search');
+    }
+    if (urlParams.get('city')) {
+        const citySelect = document.getElementById('filterApartCity');
+        if (citySelect) citySelect.value = urlParams.get('city');
+    }
+    if (urlParams.get('rooms')) {
+        const roomsSelect = document.getElementById('filterApartRooms');
+        if (roomsSelect) roomsSelect.value = urlParams.get('rooms');
+    }
+    if (urlParams.get('minPrice')) {
+        const minPriceInput = document.getElementById('filterApartMinPrice');
+        if (minPriceInput) minPriceInput.value = urlParams.get('minPrice');
+    }
+    if (urlParams.get('maxPrice')) {
+        const maxPriceInput = document.getElementById('filterApartMaxPrice');
+        if (maxPriceInput) maxPriceInput.value = urlParams.get('maxPrice');
+    }
+    if (urlParams.get('sort')) {
+        const sortSelect = document.getElementById('filterApartSort');
+        if (sortSelect) sortSelect.value = urlParams.get('sort');
     }
 
+    syncApartmentQuickTagChips();
     loadApartments();
 });
 
@@ -62,16 +82,35 @@ function insertApartmentsToolbar(container) {
             <div class="filter-item">
                 <label class="filter-label" for="filterApartSort">Сортировка</label>
                 <select id="filterApartSort" class="filter-control">
-                    <option value="">По умолчанию</option>
+                    <option value="">По умолчанию (Новые)</option>
                     <option value="price_asc">Сначала дешевле</option>
                     <option value="price_desc">Сначала дороже</option>
-                    <option value="area_desc">По площади</option>
+                    <option value="area_desc">По площади (Больше)</option>
+                    <option value="area_asc">По площади (Меньше)</option>
+                    <option value="title_asc">По названию (А — Я)</option>
                 </select>
             </div>
 
             <div class="filter-item" style="justify-content: flex-end;">
                 <button type="button" class="btn-filter-reset" id="filterApartResetBtn">Сбросить</button>
             </div>
+        </div>
+
+        <div class="quick-tags-row" id="apartQuickTagsRow">
+            <span class="quick-tags-label">Быстрый выбор:</span>
+            <button type="button" class="quick-tag-chip active" data-type="city" data-val="">Все города</button>
+            <button type="button" class="quick-tag-chip" data-type="city" data-val="Москва">Москва</button>
+            <button type="button" class="quick-tag-chip" data-type="city" data-val="Минск">Минск</button>
+            <button type="button" class="quick-tag-chip" data-type="city" data-val="Лондон">Лондон</button>
+            <button type="button" class="quick-tag-chip" data-type="city" data-val="Лос Анджелес">Лос Анджелес</button>
+            <span class="quick-tags-separator">|</span>
+            <button type="button" class="quick-tag-chip" data-type="price-range" data-min="" data-max="500">До 500 $</button>
+            <button type="button" class="quick-tag-chip" data-type="price-range" data-min="500" data-max="1000">500 — 1000 $</button>
+            <button type="button" class="quick-tag-chip" data-type="price-range" data-min="1000" data-max="">От 1000 $</button>
+            <span class="quick-tags-separator">|</span>
+            <button type="button" class="quick-tag-chip" data-type="rooms" data-val="1">1 комн.</button>
+            <button type="button" class="quick-tag-chip" data-type="rooms" data-val="2">2 комн.</button>
+            <button type="button" class="quick-tag-chip" data-type="rooms" data-val="6">6+ комн.</button>
         </div>
 
         <div class="catalog-status-bar">
@@ -83,13 +122,44 @@ function insertApartmentsToolbar(container) {
     container.parentNode.insertBefore(toolbar, container);
 
     // Bind event listeners
-    const triggerSearch = debounce(() => loadApartments(), 250);
+    const triggerSearch = debounce(() => {
+        syncApartmentQuickTagChips();
+        loadApartments();
+    }, 250);
+
     document.getElementById('filterApartSearch').addEventListener('input', triggerSearch);
-    document.getElementById('filterApartCity').addEventListener('change', () => loadApartments());
-    document.getElementById('filterApartRooms').addEventListener('change', () => loadApartments());
+    document.getElementById('filterApartCity').addEventListener('change', () => {
+        syncApartmentQuickTagChips();
+        loadApartments();
+    });
+    document.getElementById('filterApartRooms').addEventListener('change', () => {
+        syncApartmentQuickTagChips();
+        loadApartments();
+    });
     document.getElementById('filterApartMinPrice').addEventListener('input', triggerSearch);
     document.getElementById('filterApartMaxPrice').addEventListener('input', triggerSearch);
     document.getElementById('filterApartSort').addEventListener('change', () => loadApartments());
+
+    // Quick tag chips binding
+    document.querySelectorAll('#apartQuickTagsRow .quick-tag-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const type = chip.getAttribute('data-type');
+            if (type === 'city') {
+                const val = chip.getAttribute('data-val') || '';
+                document.getElementById('filterApartCity').value = val;
+            } else if (type === 'rooms') {
+                const val = chip.getAttribute('data-val') || '';
+                document.getElementById('filterApartRooms').value = val;
+            } else if (type === 'price-range') {
+                const min = chip.getAttribute('data-min') || '';
+                const max = chip.getAttribute('data-max') || '';
+                document.getElementById('filterApartMinPrice').value = min;
+                document.getElementById('filterApartMaxPrice').value = max;
+            }
+            syncApartmentQuickTagChips();
+            loadApartments();
+        });
+    });
 
     document.getElementById('filterApartResetBtn').addEventListener('click', () => {
         document.getElementById('filterApartSearch').value = '';
@@ -98,8 +168,42 @@ function insertApartmentsToolbar(container) {
         document.getElementById('filterApartMinPrice').value = '';
         document.getElementById('filterApartMaxPrice').value = '';
         document.getElementById('filterApartSort').value = '';
+        syncApartmentQuickTagChips();
         loadApartments();
     });
+}
+
+function syncApartmentQuickTagChips() {
+    const curCity = document.getElementById('filterApartCity')?.value || '';
+    const curRooms = document.getElementById('filterApartRooms')?.value || '';
+    const curMin = document.getElementById('filterApartMinPrice')?.value || '';
+    const curMax = document.getElementById('filterApartMaxPrice')?.value || '';
+
+    document.querySelectorAll('#apartQuickTagsRow .quick-tag-chip').forEach(chip => {
+        const type = chip.getAttribute('data-type');
+        chip.classList.remove('active');
+        if (type === 'city') {
+            if (chip.getAttribute('data-val') === curCity) chip.classList.add('active');
+        } else if (type === 'rooms') {
+            if (chip.getAttribute('data-val') === curRooms) chip.classList.add('active');
+        } else if (type === 'price-range') {
+            const min = chip.getAttribute('data-min') || '';
+            const max = chip.getAttribute('data-max') || '';
+            if (min === curMin && max === curMax) chip.classList.add('active');
+        }
+    });
+}
+
+function updateApartmentsUrlParams(search, city, rooms, minPrice, maxPrice, sort) {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (city) params.set('city', city);
+    if (rooms) params.set('rooms', rooms);
+    if (minPrice) params.set('minPrice', minPrice);
+    if (maxPrice) params.set('maxPrice', maxPrice);
+    if (sort) params.set('sort', sort);
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newUrl);
 }
 
 async function loadApartments() {
@@ -113,6 +217,8 @@ async function loadApartments() {
     const minPrice = document.getElementById('filterApartMinPrice')?.value || '';
     const maxPrice = document.getElementById('filterApartMaxPrice')?.value || '';
     const sort = document.getElementById('filterApartSort')?.value || '';
+
+    updateApartmentsUrlParams(search, city, rooms, minPrice, maxPrice, sort);
 
     let items = [];
 
@@ -154,7 +260,6 @@ function renderApartmentsList(items, container, countEl) {
     }
 
     items.forEach(item => {
-        // Normalize image path: if path starts with Images/, prepend ../
         let imgPath = item.image;
         if (!imgPath.startsWith('../') && !imgPath.startsWith('http')) {
             imgPath = '../' + imgPath.replace(/^\/+/, '');
@@ -253,6 +358,8 @@ async function loadApartmentsFromXmlFallback(search, city, rooms, minPrice, maxP
         if (sort === 'price_asc') list.sort((a, b) => a.price - b.price);
         if (sort === 'price_desc') list.sort((a, b) => b.price - a.price);
         if (sort === 'area_desc') list.sort((a, b) => b.area - a.area);
+        if (sort === 'area_asc') list.sort((a, b) => a.area - b.area);
+        if (sort === 'title_asc') list.sort((a, b) => a.title.localeCompare(b.title, 'ru'));
 
         return list;
     } catch (e) {
@@ -265,6 +372,6 @@ function debounce(func, delay) {
     let timeout;
     return (...args) => {
         clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
+        timeout = setTimeout(() => func(...args), delay);
     };
 }

@@ -51,6 +51,11 @@ public class PropertyRepository : IPropertyRepository
             query = query.Where(p => p.Rooms <= filter.MaxRooms.Value);
         }
 
+        if (filter.Floors.HasValue)
+        {
+            query = query.Where(p => p.Floors == filter.Floors.Value);
+        }
+
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var lowerSearch = filter.Search.Trim().ToLower();

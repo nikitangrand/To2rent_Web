@@ -30,6 +30,7 @@ public class PropertyFilterDto
     public decimal? MaxPrice { get; set; }
     public int? MinRooms { get; set; }
     public int? MaxRooms { get; set; }
+    public int? Floors { get; set; }
     public string? Search { get; set; }
     public string? Sort { get; set; }
 }
