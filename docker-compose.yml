@@ -73,6 +73,8 @@ services:
     restart: always
     ports:
       - "5000:5000"
+    volumes:
+      - ./TO2RENT:/app/TO2RENT:ro
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       DatabaseProvider: PostgreSQL

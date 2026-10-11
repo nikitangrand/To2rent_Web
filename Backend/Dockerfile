@@ -20,5 +20,6 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 # Copy static frontend assets into container
 COPY TO2RENT /app/TO2RENT
+COPY TO2RENT /TO2RENT
 
 ENTRYPOINT ["dotnet", "Backend.dll"]

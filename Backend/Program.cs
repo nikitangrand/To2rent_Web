@@ -173,8 +173,21 @@ app.MapScalarApiReference(options =>
 app.UseCors("AllowAll");
 
 // Serve Frontend (TO2RENT directory)
-var frontendPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "TO2RENT"));
-if (Directory.Exists(frontendPath))
+var candidatePaths = new[]
+{
+    Path.Combine(app.Environment.ContentRootPath, "TO2RENT"),
+    Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "TO2RENT")),
+    Path.Combine(AppContext.BaseDirectory, "TO2RENT"),
+    Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "TO2RENT")),
+    Path.Combine(Directory.GetCurrentDirectory(), "TO2RENT"),
+    Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "TO2RENT")),
+    "/app/TO2RENT",
+    "/TO2RENT"
+};
+
+var frontendPath = candidatePaths.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p) && Directory.Exists(p));
+
+if (!string.IsNullOrEmpty(frontendPath))
 {
     var fileProvider = new PhysicalFileProvider(frontendPath);
 
@@ -198,6 +211,23 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
+
+if (!string.IsNullOrEmpty(frontendPath))
+{
+    app.MapGet("/", async context =>
+    {
+        var indexPath = Path.Combine(frontendPath, "index.html");
+        if (File.Exists(indexPath))
+        {
+            context.Response.ContentType = "text/html; charset=utf-8";
+            await context.Response.SendFileAsync(indexPath);
+        }
+        else
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+        }
+    });
+}
 
 // Database Initialization & Seed Data
 using (var scope = app.Services.CreateScope())
