@@ -63,6 +63,24 @@ public static class DbInitializer
         }
         catch { }
 
+        // Ensure Reviews table has PropertyId, UserId, PropertyTitle columns
+        try
+        {
+            if (context.Database.IsNpgsql())
+            {
+                context.Database.ExecuteSqlRaw(@"ALTER TABLE ""Reviews"" ADD COLUMN IF NOT EXISTS ""PropertyId"" integer NULL;");
+                context.Database.ExecuteSqlRaw(@"ALTER TABLE ""Reviews"" ADD COLUMN IF NOT EXISTS ""UserId"" integer NULL;");
+                context.Database.ExecuteSqlRaw(@"ALTER TABLE ""Reviews"" ADD COLUMN IF NOT EXISTS ""PropertyTitle"" text NULL;");
+            }
+            else
+            {
+                try { context.Database.ExecuteSqlRaw(@"ALTER TABLE ""Reviews"" ADD COLUMN ""PropertyId"" INTEGER NULL;"); } catch { }
+                try { context.Database.ExecuteSqlRaw(@"ALTER TABLE ""Reviews"" ADD COLUMN ""UserId"" INTEGER NULL;"); } catch { }
+                try { context.Database.ExecuteSqlRaw(@"ALTER TABLE ""Reviews"" ADD COLUMN ""PropertyTitle"" TEXT NULL;"); } catch { }
+            }
+        }
+        catch { }
+
         if (!context.Users.Any())
         {
             var adminUser = new User
@@ -276,34 +294,52 @@ public static class DbInitializer
         {
             new Review
             {
+                PropertyId = properties[0].Id,
+                PropertyTitle = properties[0].Title,
                 Author = "Анна Петрова",
                 Rating = 5,
-                Comment = "Огромное спасибо агентству TO2RENT за профессионализм и индивидуальный подход! Нашли для меня идеальную квартиру за неделю, все документы оформили быстро и без лишних хлопот.",
+                Comment = "Огромное спасибо агентству TO2RENT за профессионализм и индивидуальный подход! Апартаменты на Бейкер-стрит превзошли все ожидания: просторные, чистые и тихие.",
                 CreatedAt = DateTime.UtcNow.AddDays(-180),
                 IsApproved = true
             },
             new Review
             {
+                PropertyId = properties[2].Id,
+                PropertyTitle = properties[2].Title,
                 Author = "Сергей Иванов",
                 Rating = 5,
-                Comment = "TO2RENT помогли с арендой квартиры по отличной цене. Особенно понравилось, что агенты всегда были на связи и подробно объясняли все этапы сделки.",
+                Comment = "TO2RENT помогли с арендой квартиры в Москве по отличной цене. Особенно понравилось, что агенты всегда были на связи и подробно объясняли все детали.",
                 CreatedAt = DateTime.UtcNow.AddDays(-220),
                 IsApproved = true
             },
             new Review
             {
+                PropertyId = properties[4].Id,
+                PropertyTitle = properties[4].Title,
                 Author = "Мария К.",
-                Rating = 4,
-                Comment = "Очень понравился сервис и дружелюбие команды. Немного задержались с подбором вариантов, но в итоге нашли отличный дом для всей семьи.",
+                Rating = 5,
+                Comment = "Очень понравился сервис и дом в Лос-Анджелесе. Панорамные окна, чистый бассейн и современный дизайн. Прекрасный отдых для всей семьи.",
                 CreatedAt = DateTime.UtcNow.AddDays(-230),
                 IsApproved = true
             },
             new Review
             {
+                PropertyId = properties[4].Id,
+                PropertyTitle = properties[4].Title,
                 Author = "Дмитрий Соколов",
                 Rating = 5,
                 Comment = "Бронировал коттедж в Лос-Анджелесе на месяц через TO2RENT. Все соответствовало фотографиям на 100%, менеджер Макс решил все вопросы по заселению за час!",
                 CreatedAt = DateTime.UtcNow.AddDays(-15),
+                IsApproved = true
+            },
+            new Review
+            {
+                PropertyId = null,
+                PropertyTitle = null,
+                Author = "Елена Васильева",
+                Rating = 5,
+                Comment = "Надежное агентство! Пользуюсь услугами TO2RENT уже второй год для деловых поездок. Всегда пунктуально и без задержек.",
+                CreatedAt = DateTime.UtcNow.AddDays(-45),
                 IsApproved = true
             }
         };

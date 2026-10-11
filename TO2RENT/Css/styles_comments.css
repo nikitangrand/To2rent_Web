@@ -131,3 +131,59 @@
     grid-template-columns: 2fr 1fr;
   }
 }/*# sourceMappingURL=styles_comments.css.map */
+
+/* Reviews Filter Bar & Controls */
+.reviews-filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.review-filter-btn {
+  background: #222222;
+  color: #cccccc;
+  border: 1px solid #444444;
+  border-radius: 0;
+  padding: 8px 18px;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.review-filter-btn:hover {
+  background: #333333;
+  color: #ffffff;
+}
+
+.review-filter-btn.active {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.form-select {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  border: 1px solid #c4c4c4;
+  border-radius: 0;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.review-prop-tag {
+  display: inline-block;
+  background: #e0e0e0;
+  color: #111111;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Roboto Condensed', sans-serif;
+  border: 1px solid #999999;
+  border-radius: 0;
+  margin-bottom: 8px;
+}

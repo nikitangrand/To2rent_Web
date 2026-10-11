@@ -17,9 +17,23 @@ public class ReviewsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Review>>> GetReviews([FromQuery] bool onlyApproved = true)
+    public async Task<ActionResult<IEnumerable<Review>>> GetReviews([FromQuery] bool onlyApproved = true, [FromQuery] int? propertyId = null)
     {
-        var result = await _reviewService.GetReviewsAsync(onlyApproved);
+        var result = await _reviewService.GetReviewsAsync(onlyApproved, propertyId);
+        return Ok(result);
+    }
+
+    [HttpGet("property/{propertyId}")]
+    public async Task<ActionResult<IEnumerable<Review>>> GetPropertyReviews(int propertyId)
+    {
+        var result = await _reviewService.GetPropertyReviewsAsync(propertyId);
+        return Ok(result);
+    }
+
+    [HttpGet("property/{propertyId}/summary")]
+    public async Task<ActionResult<PropertyRatingSummaryDto>> GetPropertyRatingSummary(int propertyId)
+    {
+        var result = await _reviewService.GetPropertyRatingSummaryAsync(propertyId);
         return Ok(result);
     }
 
@@ -28,6 +42,7 @@ public class ReviewsController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(dto.Author)) return BadRequest(new { message = "Укажите имя" });
         if (string.IsNullOrWhiteSpace(dto.Comment)) return BadRequest(new { message = "Напишите текст отзыва" });
+        if (dto.Rating < 1 || dto.Rating > 5) return BadRequest(new { message = "Оценка должна быть от 1 до 5" });
 
         var created = await _reviewService.CreateReviewAsync(dto);
         return CreatedAtAction(nameof(GetReviews), new { id = created.Id }, created);

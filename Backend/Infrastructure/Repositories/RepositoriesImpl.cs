@@ -241,9 +241,23 @@ public class ReviewRepository : IReviewRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Review>> GetAllAsync(bool onlyApproved = true)
+    public async Task<IEnumerable<Review>> GetAllAsync(bool onlyApproved = true, int? propertyId = null)
     {
         var query = _context.Reviews.AsQueryable();
+        if (onlyApproved)
+        {
+            query = query.Where(r => r.IsApproved);
+        }
+        if (propertyId.HasValue)
+        {
+            query = query.Where(r => r.PropertyId == propertyId.Value);
+        }
+        return await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
+    }
+
+    public async Task<IEnumerable<Review>> GetByPropertyIdAsync(int propertyId, bool onlyApproved = true)
+    {
+        var query = _context.Reviews.Where(r => r.PropertyId == propertyId);
         if (onlyApproved)
         {
             query = query.Where(r => r.IsApproved);
@@ -280,17 +294,28 @@ public class ReviewRepository : IReviewRepository
         return true;
     }
 
-    public async Task<int> CountAsync()
+    public async Task<int> CountAsync(int? propertyId = null)
     {
-        return await _context.Reviews.CountAsync();
+        var query = _context.Reviews.AsQueryable();
+        if (propertyId.HasValue)
+        {
+            query = query.Where(r => r.PropertyId == propertyId.Value);
+        }
+        return await query.CountAsync();
     }
 
-    public async Task<double> GetAverageRatingAsync()
+    public async Task<double> GetAverageRatingAsync(int? propertyId = null)
     {
-        var count = await _context.Reviews.CountAsync();
+        var query = _context.Reviews.Where(r => r.IsApproved);
+        if (propertyId.HasValue)
+        {
+            query = query.Where(r => r.PropertyId == propertyId.Value);
+        }
+
+        var count = await query.CountAsync();
         if (count == 0) return 5.0;
 
-        return Math.Round(await _context.Reviews.AverageAsync(r => r.Rating), 1);
+        return Math.Round(await query.AverageAsync(r => (double)r.Rating), 1);
     }
 }
 

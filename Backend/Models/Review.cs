@@ -5,6 +5,9 @@ namespace Backend.Models;
 public class Review
 {
     public int Id { get; set; }
+    public int? PropertyId { get; set; }
+    public int? UserId { get; set; }
+    public string? PropertyTitle { get; set; }
     
     [Required]
     public string Author { get; set; } = string.Empty;

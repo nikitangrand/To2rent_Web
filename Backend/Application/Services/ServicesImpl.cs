@@ -271,21 +271,53 @@ public class BookingService : IBookingService
 public class ReviewService : IReviewService
 {
     private readonly IReviewRepository _repository;
+    private readonly IPropertyRepository _propertyRepository;
 
-    public ReviewService(IReviewRepository repository)
+    public ReviewService(IReviewRepository repository, IPropertyRepository propertyRepository)
     {
         _repository = repository;
+        _propertyRepository = propertyRepository;
     }
 
-    public async Task<IEnumerable<Review>> GetReviewsAsync(bool onlyApproved = true)
+    public async Task<IEnumerable<Review>> GetReviewsAsync(bool onlyApproved = true, int? propertyId = null)
     {
-        return await _repository.GetAllAsync(onlyApproved);
+        return await _repository.GetAllAsync(onlyApproved, propertyId);
+    }
+
+    public async Task<IEnumerable<Review>> GetPropertyReviewsAsync(int propertyId)
+    {
+        return await _repository.GetByPropertyIdAsync(propertyId, onlyApproved: true);
+    }
+
+    public async Task<PropertyRatingSummaryDto> GetPropertyRatingSummaryAsync(int propertyId)
+    {
+        var count = await _repository.CountAsync(propertyId);
+        var avg = await _repository.GetAverageRatingAsync(propertyId);
+        return new PropertyRatingSummaryDto
+        {
+            PropertyId = propertyId,
+            AverageRating = avg,
+            ReviewsCount = count
+        };
     }
 
     public async Task<Review> CreateReviewAsync(CreateReviewDto dto)
     {
+        string? propertyTitle = dto.PropertyTitle;
+        if (dto.PropertyId.HasValue && dto.PropertyId.Value > 0 && string.IsNullOrWhiteSpace(propertyTitle))
+        {
+            var prop = await _propertyRepository.GetByIdAsync(dto.PropertyId.Value);
+            if (prop != null)
+            {
+                propertyTitle = prop.Title;
+            }
+        }
+
         var review = new Review
         {
+            PropertyId = dto.PropertyId,
+            UserId = dto.UserId,
+            PropertyTitle = propertyTitle,
             Author = dto.Author,
             Rating = Math.Clamp(dto.Rating, 1, 5),
             Comment = dto.Comment,

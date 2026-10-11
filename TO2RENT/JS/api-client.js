@@ -222,8 +222,19 @@ const To2RentApi = (() => {
         },
 
         // Reviews
-        getReviews(onlyApproved = true) {
-            return request(`/api/reviews?onlyApproved=${onlyApproved}`);
+        getReviews(onlyApproved = true, propertyId = null) {
+            const params = new URLSearchParams();
+            params.append('onlyApproved', onlyApproved);
+            if (propertyId) params.append('propertyId', propertyId);
+            return request(`/api/reviews?${params.toString()}`);
+        },
+
+        getPropertyReviews(propertyId) {
+            return request(`/api/properties/${propertyId}/reviews`);
+        },
+
+        getPropertyRatingSummary(propertyId) {
+            return request(`/api/properties/${propertyId}/rating`);
         },
 
         createReview(data) {

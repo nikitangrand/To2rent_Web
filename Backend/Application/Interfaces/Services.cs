@@ -28,7 +28,9 @@ public interface IBookingService
 
 public interface IReviewService
 {
-    Task<IEnumerable<Review>> GetReviewsAsync(bool onlyApproved = true);
+    Task<IEnumerable<Review>> GetReviewsAsync(bool onlyApproved = true, int? propertyId = null);
+    Task<IEnumerable<Review>> GetPropertyReviewsAsync(int propertyId);
+    Task<PropertyRatingSummaryDto> GetPropertyRatingSummaryAsync(int propertyId);
     Task<Review> CreateReviewAsync(CreateReviewDto dto);
     Task<Review?> ToggleApprovalAsync(int id, bool isApproved);
     Task<bool> DeleteReviewAsync(int id);

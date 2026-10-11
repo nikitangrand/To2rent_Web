@@ -70,6 +70,10 @@ public class BookedDateRangeDto
 
 public class CreateReviewDto
 {
+    public int? PropertyId { get; set; }
+    public int? UserId { get; set; }
+    public string? PropertyTitle { get; set; }
+
     [Required]
     public string Author { get; set; } = string.Empty;
 
@@ -78,6 +82,13 @@ public class CreateReviewDto
 
     [Required]
     public string Comment { get; set; } = string.Empty;
+}
+
+public class PropertyRatingSummaryDto
+{
+    public int PropertyId { get; set; }
+    public double AverageRating { get; set; }
+    public int ReviewsCount { get; set; }
 }
 
 public class CreateInquiryDto

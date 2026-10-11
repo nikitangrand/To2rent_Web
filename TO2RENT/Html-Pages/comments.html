@@ -32,46 +32,40 @@
             <h1>Отзывы клиентов</h1>
             <p class="brand-quote">«TO2RENT — это не просто агентство недвижимости, а команда, которая помогает найти дом мечты и сопровождает на каждом этапе.»</p>
 
+            <div class="reviews-filter-bar" id="reviewsFilterBar">
+                <button type="button" class="review-filter-btn active" data-filter="all">Все отзывы</button>
+                <button type="button" class="review-filter-btn" data-filter="agency">Об агентстве</button>
+                <button type="button" class="review-filter-btn" data-filter="properties">Об объектах</button>
+            </div>
+
             <div class="reviews-container">
                 <ul class="review-list">
-                    <li class="review">
-                        <div class="stars">Оценка: 5 / 5</div>
-                        <div class="review-header">
-                            <span class="author">Анна Петрова</span>
-                            <span class="date">12 апреля 2025</span>
-                        </div>
-                        <p class="com-text">Огромное спасибо агентству TO2RENT за профессионализм и индивидуальный подход! Нашли для меня идеальную квартиру за неделю, все документы оформили быстро и без лишних хлопот.</p>
-                    </li>
-                    <li class="review">
-                        <div class="stars">Оценка: 5 / 5</div>
-                        <div class="review-header">
-                            <span class="author">Сергей Иванов</span>
-                            <span class="date">2 марта 2025</span>
-                        </div>
-                        <p class="com-text">TO2RENT помогли продать мою квартиру по отличной цене. Особенно понравилось, что агенты всегда были на связи и подробно объясняли все этапы сделки.</p>
-                    </li>
-                    <li class="review">
-                        <div class="stars">Оценка: 4 / 5</div>
-                        <div class="review-header">
-                            <span class="author">Мария К.</span>
-                            <span class="date">25 февраля 2025</span>
-                        </div>
-                        <p class="com-text">Очень понравился сервис и дружелюбие команды. Немного задержались с подбором вариантов, но в итоге нашли отличный дом для всей семьи.</p>
-                    </li>
+                    <li style="text-align: center; padding: 20px; color: #888;">Загрузка отзывов...</li>
                 </ul>
 
                 <form class="review-form">
                     <h2>Оставить отзыв</h2>
-                    <label for="name">Ваше имя</label>
-                    <input type="text" id="name" name="name" required>
+                    <label for="reviewProperty">Объект недвижимости</label>
+                    <select id="reviewProperty" name="reviewProperty" class="form-select">
+                        <option value="">Общий отзыв об агентстве TO2RENT</option>
+                    </select>
+
+                    <label for="name">Ваше имя *</label>
+                    <input type="text" id="name" name="name" placeholder="Иван Иванов" required>
                     
-                    <label for="rating">Оценка (1-5)</label>
-                    <input type="number" id="rating" name="rating" min="1" max="5" required>
+                    <label for="rating">Оценка *</label>
+                    <select id="rating" name="rating" class="form-select" required>
+                        <option value="5" selected>5 из 5 (Отлично)</option>
+                        <option value="4">4 из 5 (Хорошо)</option>
+                        <option value="3">3 из 5 (Удовлетворительно)</option>
+                        <option value="2">2 из 5 (Плохо)</option>
+                        <option value="1">1 из 5 (Ужасно)</option>
+                    </select>
                     
-                    <label for="comment">Текст отзыва</label>
-                    <textarea id="comment" name="comment" rows="4" required></textarea>
+                    <label for="comment">Текст отзыва *</label>
+                    <textarea id="comment" name="comment" rows="4" placeholder="Поделитесь вашими впечатлениями..." required></textarea>
                     
-                    <button type="submit" class="submit-btn">Отправить</button>
+                    <button type="submit" class="submit-btn">Отправить отзыв</button>
                 </form>
             </div>
         </section>

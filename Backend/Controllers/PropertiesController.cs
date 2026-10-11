@@ -11,11 +11,16 @@ public class PropertiesController : ControllerBase
 {
     private readonly IPropertyService _propertyService;
     private readonly IBookingService _bookingService;
+    private readonly IReviewService _reviewService;
 
-    public PropertiesController(IPropertyService propertyService, IBookingService bookingService)
+    public PropertiesController(
+        IPropertyService propertyService, 
+        IBookingService bookingService,
+        IReviewService reviewService)
     {
         _propertyService = propertyService;
         _bookingService = bookingService;
+        _reviewService = reviewService;
     }
 
     [HttpGet("{id}/booked-dates")]
@@ -23,6 +28,20 @@ public class PropertiesController : ControllerBase
     {
         var dates = await _bookingService.GetBookedDatesForPropertyAsync(id);
         return Ok(dates);
+    }
+
+    [HttpGet("{id}/reviews")]
+    public async Task<ActionResult<IEnumerable<Review>>> GetPropertyReviews(int id)
+    {
+        var reviews = await _reviewService.GetPropertyReviewsAsync(id);
+        return Ok(reviews);
+    }
+
+    [HttpGet("{id}/rating")]
+    public async Task<ActionResult<PropertyRatingSummaryDto>> GetPropertyRating(int id)
+    {
+        var rating = await _reviewService.GetPropertyRatingSummaryAsync(id);
+        return Ok(rating);
     }
 
     [HttpGet]

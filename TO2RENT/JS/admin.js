@@ -526,7 +526,10 @@ async function loadReviewsTable() {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>#${r.id}</strong></td>
-                <td><strong>${escapeHtml(r.author)}</strong></td>
+                <td>
+                    <strong>${escapeHtml(r.author)}</strong>
+                    ${r.propertyTitle ? `<br><small style="color: #666; font-size: 11px;">Объект: ${escapeHtml(r.propertyTitle)}</small>` : '<br><small style="color: #888; font-size: 11px;">Агентство</small>'}
+                </td>
                 <td style="font-weight: 700;">${r.rating} / 5</td>
                 <td style="max-width: 360px;">${escapeHtml(r.comment)}</td>
                 <td>

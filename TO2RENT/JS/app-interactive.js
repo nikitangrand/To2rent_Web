@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindSearchForm();
     bindFooterForms();
     highlightCurrentNavLink();
+    initDetailPageReviews();
 
     window.addEventListener('to2rent:auth_changed', () => {
         renderAuthNavbar();
@@ -315,6 +316,7 @@ function initBookingModal() {
                 <div class="property-preview-info">
                     <h4 id="bookingPropTitle">Название объекта</h4>
                     <div class="preview-price" id="bookingPropPrice">0 $</div>
+                    <div class="preview-rating" id="bookingPropRating" style="font-size: 13px; color: #555; margin-top: 3px; font-weight: 600;"></div>
                 </div>
             </div>
 
@@ -427,11 +429,24 @@ async function openBookingModal(property = {}) {
         submitBtn.textContent = 'Подтвердить бронирование';
     }
 
+    const ratingEl = document.getElementById('bookingPropRating');
+    if (ratingEl) ratingEl.textContent = '';
+
     if (property && property.title) {
         preview.style.display = 'flex';
         titleEl.textContent = property.title;
         priceEl.textContent = `${formatNumber(property.price || 0)} ${property.currency || '$'} / сутки`;
         imgEl.src = property.image || '../Images/Terr1.jpg';
+
+        if (property.id) {
+            To2RentApi.getPropertyRatingSummary(property.id).then(summary => {
+                if (summary && summary.reviewsCount > 0 && ratingEl) {
+                    ratingEl.textContent = `Рейтинг: ${summary.averageRating} / 5 (${summary.reviewsCount} ${getReviewsPlural(summary.reviewsCount)})`;
+                } else if (ratingEl) {
+                    ratingEl.textContent = 'Новый объект';
+                }
+            }).catch(() => {});
+        }
     } else {
         preview.style.display = 'none';
     }
@@ -926,6 +941,12 @@ function getDaysPlural(n) {
     return 'ночей';
 }
 
+function getReviewsPlural(n) {
+    if (n % 10 === 1 && n % 100 !== 11) return 'отзыв';
+    if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'отзыва';
+    return 'отзывов';
+}
+
 function escapeHtml(str) {
     if (!str) return '';
     return String(str)
@@ -1268,6 +1289,179 @@ async function handleClientProfileSubmit(e) {
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Сохранить изменения';
+    }
+}
+
+async function initDetailPageReviews() {
+    const card = document.querySelector('.appart--card');
+    if (!card) return;
+
+    const titleEl = card.querySelector('h2');
+    if (!titleEl) return;
+    const title = titleEl.textContent.trim();
+
+    try {
+        const properties = await To2RentApi.getProperties();
+        let prop = Array.isArray(properties) ? properties.find(p => p.title.trim().toLowerCase() === title.toLowerCase()) : null;
+        if (!prop && Array.isArray(properties) && properties.length > 0) {
+            prop = properties.find(p => title.toLowerCase().includes(p.city.toLowerCase()) || p.title.toLowerCase().includes(title.toLowerCase()));
+        }
+        if (!prop) return;
+
+        // Display rating pill under price
+        const priceEl = card.querySelector('.price');
+        const summary = await To2RentApi.getPropertyRatingSummary(prop.id);
+
+        const pill = document.createElement('div');
+        pill.className = 'prop-rating-pill';
+        pill.id = 'detailPropRatingPill';
+        if (summary && summary.reviewsCount > 0) {
+            pill.innerHTML = `
+                <span class="rating-score">Рейтинг: ${summary.averageRating} / 5</span>
+                <span class="rating-count">(${summary.reviewsCount} ${getReviewsPlural(summary.reviewsCount)})</span>
+            `;
+        } else {
+            pill.innerHTML = `<span class="rating-score">Новый объект</span> <span class="rating-count">(пока нет отзывов)</span>`;
+        }
+        if (priceEl && priceEl.parentNode) {
+            priceEl.parentNode.insertBefore(pill, priceEl.nextSibling);
+        }
+
+        // Add Reviews Section below card
+        const reviewsSection = document.createElement('section');
+        reviewsSection.className = 'property-reviews-block';
+        reviewsSection.id = 'propertyReviewsSection';
+        reviewsSection.innerHTML = `
+            <div class="property-reviews-header">
+                <div>
+                    <h3>Отзывы об объекте</h3>
+                    <small style="color: #666;">Впечатления и оценки гостей</small>
+                </div>
+                <button type="button" class="btn-add-review" id="btnTogglePropReviewForm">Оставить отзыв</button>
+            </div>
+
+            <div class="property-reviews-list" id="propReviewsList">
+                <div style="text-align: center; color: #888; padding: 20px;">Загрузка отзывов...</div>
+            </div>
+
+            <div class="inline-review-form" id="inlinePropReviewForm" style="display: none;">
+                <h4>Оставить отзыв об объекте «${escapeHtml(prop.title)}»</h4>
+                <form id="propDetailReviewForm">
+                    <div class="form-grid">
+                        <div>
+                            <label class="input-label" for="detailRevAuthor">Ваше имя *</label>
+                            <input type="text" id="detailRevAuthor" class="input-field" placeholder="Иван Иванов" required>
+                        </div>
+                        <div>
+                            <label class="input-label" for="detailRevRating">Оценка *</label>
+                            <select id="detailRevRating" class="input-field" required>
+                                <option value="5" selected>5 из 5 (Отлично)</option>
+                                <option value="4">4 из 5 (Хорошо)</option>
+                                <option value="3">3 из 5 (Удовлетворительно)</option>
+                                <option value="2">2 из 5 (Плохо)</option>
+                                <option value="1">1 из 5 (Ужасно)</option>
+                            </select>
+                        </div>
+                        <div class="form-group-full">
+                            <label class="input-label" for="detailRevComment">Текст отзыва *</label>
+                            <textarea id="detailRevComment" class="input-field" rows="3" placeholder="Расскажите о проживании в этом объекте..." required></textarea>
+                        </div>
+                    </div>
+                    <button type="submit" class="modal-submit-btn" style="margin-top: 14px; max-width: 250px;">Опубликовать отзыв</button>
+                </form>
+            </div>
+        `;
+
+        card.parentNode.insertBefore(reviewsSection, card.nextSibling);
+
+        const user = To2RentApi.getCurrentUser();
+        const authorInput = document.getElementById('detailRevAuthor');
+        if (user && authorInput) authorInput.value = user.fullName || user.username;
+
+        const toggleBtn = document.getElementById('btnTogglePropReviewForm');
+        const formContainer = document.getElementById('inlinePropReviewForm');
+        toggleBtn?.addEventListener('click', () => {
+            const isHidden = formContainer.style.display === 'none';
+            formContainer.style.display = isHidden ? 'block' : 'none';
+            toggleBtn.textContent = isHidden ? 'Скрыть форму' : 'Оставить отзыв';
+        });
+
+        const loadPropReviews = async () => {
+            const listEl = document.getElementById('propReviewsList');
+            if (!listEl) return;
+            try {
+                const reviews = await To2RentApi.getPropertyReviews(prop.id);
+                if (!reviews || reviews.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="property-empty-reviews">
+                            Пока нет опубликованных отзывов для этого объекта. Будьте первым, кто поделится отзывом!
+                        </div>`;
+                    return;
+                }
+                listEl.innerHTML = reviews.map(r => `
+                    <div class="prop-review-card">
+                        <div class="prop-review-card-header">
+                            <span class="prop-review-author">${escapeHtml(r.author)}</span>
+                            <span class="prop-review-date">${formatDateRussian(r.createdAt)}</span>
+                        </div>
+                        <div class="prop-review-rating">Оценка: ${r.rating} из 5</div>
+                        <p class="prop-review-text">${escapeHtml(r.comment)}</p>
+                    </div>
+                `).join('');
+            } catch (_) {
+                listEl.innerHTML = '<div class="property-empty-reviews">Не удалось загрузить отзывы.</div>';
+            }
+        };
+
+        await loadPropReviews();
+
+        const reviewForm = document.getElementById('propDetailReviewForm');
+        reviewForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = reviewForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Публикация...';
+
+            const author = document.getElementById('detailRevAuthor').value.trim();
+            const rating = parseInt(document.getElementById('detailRevRating').value, 10);
+            const comment = document.getElementById('detailRevComment').value.trim();
+            const curUser = To2RentApi.getCurrentUser();
+
+            try {
+                await To2RentApi.createReview({
+                    propertyId: prop.id,
+                    propertyTitle: prop.title,
+                    userId: curUser?.id || null,
+                    author,
+                    rating,
+                    comment
+                });
+                showToast('Спасибо за отзыв', 'Ваш отзыв успешно опубликован.', 'success');
+                reviewForm.reset();
+                if (curUser) {
+                    document.getElementById('detailRevAuthor').value = curUser.fullName || curUser.username;
+                }
+                formContainer.style.display = 'none';
+                toggleBtn.textContent = 'Оставить отзыв';
+
+                await loadPropReviews();
+                const newSummary = await To2RentApi.getPropertyRatingSummary(prop.id);
+                const pillEl = document.getElementById('detailPropRatingPill');
+                if (pillEl) {
+                    pillEl.innerHTML = `
+                        <span class="rating-score">Рейтинг: ${newSummary.averageRating} / 5</span>
+                        <span class="rating-count">(${newSummary.reviewsCount} ${getReviewsPlural(newSummary.reviewsCount)})</span>
+                    `;
+                }
+            } catch (err) {
+                showToast('Ошибка публикации', err.message || 'Не удалось опубликовать отзыв.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Опубликовать отзыв';
+            }
+        });
+    } catch (err) {
+        console.warn('Не удалось инициализировать отзывы на странице объекта:', err);
     }
 }
 

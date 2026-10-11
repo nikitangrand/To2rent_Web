@@ -31,13 +31,14 @@ public interface IBookingRepository
 
 public interface IReviewRepository
 {
-    Task<IEnumerable<Review>> GetAllAsync(bool onlyApproved = true);
+    Task<IEnumerable<Review>> GetAllAsync(bool onlyApproved = true, int? propertyId = null);
+    Task<IEnumerable<Review>> GetByPropertyIdAsync(int propertyId, bool onlyApproved = true);
     Task<Review?> GetByIdAsync(int id);
     Task<Review> AddAsync(Review review);
     Task<Review> UpdateAsync(Review review);
     Task<bool> DeleteAsync(int id);
-    Task<int> CountAsync();
-    Task<double> GetAverageRatingAsync();
+    Task<int> CountAsync(int? propertyId = null);
+    Task<double> GetAverageRatingAsync(int? propertyId = null);
 }
 
 public interface IInquiryRepository

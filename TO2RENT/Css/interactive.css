@@ -1281,3 +1281,145 @@ textarea.input-field {
   border-color: #b71c1c !important;
   background-color: #fffaf9 !important;
 }
+
+/* ==========================================================================
+   Property Reviews & Rating System
+   ========================================================================== */
+.prop-rating-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f0f0;
+  color: #111111;
+  border: 1px solid #d0d0d0;
+  border-radius: 0;
+  padding: 4px 10px;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 6px 0 12px 0;
+}
+
+.prop-rating-pill .rating-score {
+  color: #000000;
+  font-size: 14px;
+}
+
+.prop-rating-pill .rating-count {
+  color: #666666;
+  font-weight: 500;
+}
+
+.property-reviews-block {
+  max-width: 1200px;
+  margin: 40px auto 60px auto;
+  padding: 30px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.property-reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #111111;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.property-reviews-header h3 {
+  font-family: 'PT Serif', serif;
+  font-size: 24px;
+  margin: 0;
+  color: #111111;
+}
+
+.btn-add-review {
+  background: #111111;
+  color: #ffffff;
+  border: none;
+  border-radius: 0;
+  padding: 10px 22px;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-review:hover {
+  background: #333333;
+}
+
+.property-reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 30px;
+}
+
+.prop-review-card {
+  background: #f9f9f9;
+  border: 1px solid #ebebeb;
+  padding: 18px 20px;
+  border-left: 4px solid #111111;
+}
+
+.prop-review-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.prop-review-author {
+  font-weight: 700;
+  font-size: 15px;
+  color: #111111;
+}
+
+.prop-review-date {
+  font-size: 12px;
+  color: #777777;
+}
+
+.prop-review-rating {
+  font-family: 'Roboto Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: #333333;
+  margin-bottom: 8px;
+}
+
+.prop-review-text {
+  font-size: 14px;
+  color: #444444;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.property-empty-reviews {
+  padding: 30px 20px;
+  text-align: center;
+  background: #fdfdfd;
+  border: 1px dashed #d5d5d5;
+  color: #777777;
+  font-size: 14px;
+}
+
+.inline-review-form {
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.inline-review-form h4 {
+  font-family: 'PT Serif', serif;
+  font-size: 20px;
+  margin: 0 0 16px 0;
+  color: #111111;
+}
