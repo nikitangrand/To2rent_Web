@@ -122,12 +122,14 @@ function initFilterBars() {
 
 async function loadAllAdminData() {
     await Promise.all([
+        loadSystemStatus(),
         loadKpis(),
         loadBookingsTable(),
         loadInquiriesTable(),
         loadCatalogTable(),
         loadReviewsTable(),
-        loadUsersTable()
+        loadUsersTable(),
+        loadKafkaAuditTable()
     ]);
 }
 
@@ -579,7 +581,7 @@ async function deleteReviewItem(id) {
 }
 
 // ==========================================================================
-// 8. Users Management
+// 8. Users Management (Role Assignment)
 // ==========================================================================
 async function loadUsersTable() {
     const tbody = document.getElementById('usersTableBody');
@@ -591,14 +593,26 @@ async function loadUsersTable() {
         if (countEl) countEl.textContent = users?.length || 0;
 
         if (!users || users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px;">Пользователей нет</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 24px;">Пользователей нет</td></tr>';
             return;
         }
 
         tbody.innerHTML = '';
+        const currentUserId = To2RentApi.getCurrentUser()?.id;
+
         users.forEach(u => {
             const tr = document.createElement('tr');
             const isAdmin = u.role === 'Admin' || u.role === 'admin';
+            const isSelf = u.id === currentUserId;
+
+            let actionHtml = '';
+            if (isSelf) {
+                actionHtml = '<span style="color: #888; font-size: 12px;">Текущий аккаунт</span>';
+            } else if (isAdmin) {
+                actionHtml = `<button class="btn-sm-action btn-sm-action--danger" onclick="toggleUserRole(${u.id}, 'Client')">Снять админа</button>`;
+            } else {
+                actionHtml = `<button class="btn-sm-action btn-sm-action--success" onclick="toggleUserRole(${u.id}, 'Admin')">Сделать админом</button>`;
+            }
 
             tr.innerHTML = `
                 <td><strong>#${u.id}</strong></td>
@@ -612,12 +626,187 @@ async function loadUsersTable() {
                     </span>
                 </td>
                 <td>${formatDateShort(u.createdAt)}</td>
+                <td>${actionHtml}</td>
             `;
 
             tbody.appendChild(tr);
         });
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Ошибка: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: red;">Ошибка: ${e.message}</td></tr>`;
+    }
+}
+
+async function toggleUserRole(userId, newRole) {
+    const roleTitle = newRole === 'Admin' ? 'Администратор' : 'Клиент';
+    if (!confirm(`Изменить права пользователя #${userId} на "${roleTitle}"?`)) return;
+
+    try {
+        await To2RentApi.updateUserRole(userId, newRole);
+        showToast('Роль обновлена', `Пользователю #${userId} присвоена роль: ${roleTitle}`, 'success');
+        await loadUsersTable();
+    } catch (e) {
+        showToast('Ошибка изменения роли', e.message, 'error');
+    }
+}
+
+// ==========================================================================
+// 9. System Telemetry & Kafka Audit Log
+// ==========================================================================
+async function loadSystemStatus() {
+    try {
+        const s = await To2RentApi.getSystemStatus();
+        const dbEl = document.getElementById('statusDb');
+        const cacheEl = document.getElementById('statusCache');
+        const kafkaEl = document.getElementById('statusKafka');
+        const memEl = document.getElementById('statusMem');
+
+        if (dbEl) {
+            const isPg = s.database && s.database.includes('PostgreSQL');
+            dbEl.className = 'status-pill ' + (isPg ? 'status-pill--ok' : 'status-pill--warn');
+            dbEl.textContent = `БД: ${s.database || 'OK'}`;
+        }
+        if (cacheEl) {
+            const isRedis = s.caching && s.caching.includes('Redis');
+            cacheEl.className = 'status-pill ' + (isRedis ? 'status-pill--ok' : 'status-pill--warn');
+            cacheEl.textContent = `Кэш: ${s.caching || 'OK'}`;
+        }
+        if (kafkaEl) {
+            const isBroker = s.messaging && s.messaging.includes('Broker Connected');
+            kafkaEl.className = 'status-pill ' + (isBroker ? 'status-pill--ok' : 'status-pill--warn');
+            kafkaEl.textContent = `Кафка: ${s.messaging || 'OK'}`;
+        }
+        if (memEl) {
+            memEl.className = 'status-pill status-pill--neutral';
+            memEl.textContent = `ОЗУ: ${s.memoryUsageMb || 0} МБ`;
+        }
+    } catch (e) {
+        console.warn('Телеметрия недоступна:', e);
+    }
+}
+
+async function loadKafkaAuditTable() {
+    const tbody = document.getElementById('kafkaAuditTableBody');
+    const countEl = document.getElementById('tabCountKafka');
+    if (!tbody) return;
+
+    try {
+        const events = await To2RentApi.getAuditEvents(50);
+        if (countEl) countEl.textContent = events?.length || 0;
+
+        if (!events || events.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 24px;">Событий в журнале пока нет</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        events.forEach(evt => {
+            const tr = document.createElement('tr');
+            let channelClass = 'channel-badge';
+            const ch = (evt.channel || '').toLowerCase();
+            if (ch.includes('telegram')) channelClass += ' channel-badge--telegram';
+            else if (ch.includes('email')) channelClass += ' channel-badge--email';
+            else if (ch.includes('kafka')) channelClass += ' channel-badge--kafka';
+
+            tr.innerHTML = `
+                <td style="white-space: nowrap;">${formatDateTimeShort(evt.timestamp)}</td>
+                <td><strong>${escapeHtml(evt.eventType)}</strong></td>
+                <td><code style="background: #f0f0f0; padding: 2px 6px; font-size: 11px;">${escapeHtml(evt.kafkaTopic || '-')}</code></td>
+                <td><span class="${channelClass}">${escapeHtml(evt.channel)}</span></td>
+                <td><strong>${escapeHtml(evt.recipient || '-')}</strong></td>
+                <td style="font-size: 12px; color: #444; max-width: 320px;">${escapeHtml(evt.content || '-')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Ошибка: ${e.message}</td></tr>`;
+    }
+}
+
+// ==========================================================================
+// 10. CSV Export (UTF-8 BOM for MS Excel Compatibility)
+// ==========================================================================
+function downloadCsvFile(content, filename) {
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function escapeCsvField(val) {
+    if (val === null || val === undefined) return '""';
+    const str = String(val).replace(/"/g, '""');
+    return `"${str}"`;
+}
+
+async function exportBookingsCsv() {
+    try {
+        showToast('Экспорт', 'Подготовка данных бронирований для Excel...', 'info');
+        const bookings = await To2RentApi.getBookings();
+        if (!bookings || bookings.length === 0) {
+            showToast('Экспорт', 'Нет бронирований для выгрузки', 'info');
+            return;
+        }
+
+        const headers = ['ID', 'Клиент', 'Email', 'Телефон', 'Объект', 'Город', 'Дата заезда', 'Дата выезда', 'Гостей', 'Сумма ($)', 'Статус', 'Дата создания'];
+        const rows = bookings.map(b => [
+            b.id,
+            b.clientName,
+            b.clientEmail,
+            b.clientPhone,
+            b.propertyTitle,
+            b.propertyCity,
+            b.checkInDate ? b.checkInDate.split('T')[0] : '',
+            b.checkOutDate ? b.checkOutDate.split('T')[0] : '',
+            b.guestsCount,
+            b.totalPrice,
+            b.status,
+            b.createdAt ? b.createdAt.split('T')[0] : ''
+        ].map(escapeCsvField).join(';'));
+
+        const csvContent = [headers.map(escapeCsvField).join(';'), ...rows].join('\r\n');
+        const filename = `to2rent_bookings_${new Date().toISOString().slice(0, 10)}.csv`;
+        downloadCsvFile(csvContent, filename);
+        showToast('Экспорт завершен', `Файл "${filename}" сформирован`, 'success');
+    } catch (e) {
+        showToast('Ошибка экспорта', e.message, 'error');
+    }
+}
+
+async function exportCatalogCsv() {
+    try {
+        showToast('Экспорт', 'Подготовка каталога недвижимости для Excel...', 'info');
+        const properties = await To2RentApi.getProperties();
+        if (!properties || properties.length === 0) {
+            showToast('Экспорт', 'Нет объектов для выгрузки', 'info');
+            return;
+        }
+
+        const headers = ['ID', 'Название', 'Тип', 'Город', 'Цена ($)', 'Комнат', 'Площадь (м²)', 'Этажей', 'Участок (м²)', 'Описание'];
+        const rows = properties.map(p => [
+            p.id,
+            p.title,
+            p.type,
+            p.city,
+            p.price,
+            p.rooms || '',
+            p.area || '',
+            p.floors || '',
+            p.landArea || '',
+            p.description || ''
+        ].map(escapeCsvField).join(';'));
+
+        const csvContent = [headers.map(escapeCsvField).join(';'), ...rows].join('\r\n');
+        const filename = `to2rent_catalog_${new Date().toISOString().slice(0, 10)}.csv`;
+        downloadCsvFile(csvContent, filename);
+        showToast('Экспорт завершен', `Файл "${filename}" сформирован`, 'success');
+    } catch (e) {
+        showToast('Ошибка экспорта', e.message, 'error');
     }
 }
 
@@ -629,6 +818,16 @@ function formatDateShort(iso) {
     try {
         const d = new Date(iso);
         return d.toLocaleDateString('ru-RU');
+    } catch (_) {
+        return iso;
+    }
+}
+
+function formatDateTimeShort(iso) {
+    if (!iso) return '-';
+    try {
+        const d = new Date(iso);
+        return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' ' + d.toLocaleDateString('ru-RU');
     } catch (_) {
         return iso;
     }
@@ -652,3 +851,8 @@ window.openPropertyModal = openPropertyModal;
 window.openPropertyModalForEdit = openPropertyModalForEdit;
 window.toggleReviewApproval = toggleReviewApproval;
 window.deleteReviewItem = deleteReviewItem;
+window.toggleUserRole = toggleUserRole;
+window.loadKafkaAuditTable = loadKafkaAuditTable;
+window.exportBookingsCsv = exportBookingsCsv;
+window.exportCatalogCsv = exportCatalogCsv;
+

@@ -62,6 +62,12 @@ public class UpdateStatusDto
     public string Status { get; set; } = string.Empty;
 }
 
+public class UpdateRoleDto
+{
+    [Required]
+    public string Role { get; set; } = "Client";
+}
+
 public class BookedDateRangeDto
 {
     public DateTime StartDate { get; set; }
@@ -162,5 +168,28 @@ public class UpdateProfileDto
     public string? Email { get; set; }
     public string? CurrentPassword { get; set; }
     public string? NewPassword { get; set; }
+}
+
+public class NotificationRecord
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    public string Topic { get; set; } = string.Empty;
+    public string EventType { get; set; } = string.Empty;
+    public string Recipient { get; set; } = string.Empty;
+    public string Channel { get; set; } = "Telegram & Email";
+    public string Message { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+public class SystemStatusDto
+{
+    public string Status { get; set; } = "Healthy";
+    public string DatabaseProvider { get; set; } = string.Empty;
+    public bool DatabaseConnected { get; set; }
+    public bool RedisConnected { get; set; }
+    public bool KafkaConnected { get; set; }
+    public string Environment { get; set; } = string.Empty;
+    public string ServerTime { get; set; } = string.Empty;
+    public long ProcessMemoryMb { get; set; }
 }
 

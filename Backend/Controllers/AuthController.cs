@@ -116,4 +116,22 @@ public class AuthController : ControllerBase
             return StatusCode(500, new { message = "Ошибка обновления профиля: " + ex.Message });
         }
     }
+
+    [HttpPatch("users/{id}/role")]
+    public async Task<ActionResult<UserDto>> UpdateUserRole(int id, [FromBody] UpdateRoleDto dto)
+    {
+        try
+        {
+            var updated = await _authService.UpdateUserRoleAsync(id, dto.Role);
+            return Ok(updated);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Ошибка изменения роли: " + ex.Message });
+        }
+    }
 }

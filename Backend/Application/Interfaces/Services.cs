@@ -43,6 +43,7 @@ public interface IAuthService
     Task<UserDto?> GetCurrentUserAsync(int userId);
     Task<IEnumerable<UserDto>> GetAllUsersAsync();
     Task<UserDto> UpdateProfileAsync(int userId, UpdateProfileDto dto);
+    Task<UserDto> UpdateUserRoleAsync(int id, string role);
 }
 
 public interface IInquiryService
@@ -70,4 +71,18 @@ public interface IFavoriteService
     Task<bool> AddFavoriteAsync(int userId, int propertyId);
     Task<bool> RemoveFavoriteAsync(int userId, int propertyId);
     Task<bool> IsFavoriteAsync(int userId, int propertyId);
+}
+
+public interface ICacheService
+{
+    Task<T?> GetAsync<T>(string key);
+    Task SetAsync<T>(string key, T value, TimeSpan? absoluteExpiration = null);
+    Task RemoveAsync(string key);
+    Task RemoveByPrefixAsync(string prefix);
+}
+
+public interface INotificationLogService
+{
+    void Add(NotificationRecord record);
+    IEnumerable<NotificationRecord> GetRecent(int count = 50);
 }

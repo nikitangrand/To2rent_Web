@@ -21,6 +21,23 @@ services:
       retries: 5
 
   # ========================================================
+  # Redis 7 In-Memory Distributed Cache
+  # ========================================================
+  redis:
+    image: redis:7-alpine
+    container_name: to2rent-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ========================================================
   # Apache Kafka (KRaft mode - no zookeeper required)
   # ========================================================
   kafka:
@@ -60,6 +77,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       DatabaseProvider: PostgreSQL
       ConnectionStrings__PostgreSql: Host=postgres;Port=5432;Database=to2rent_db;Username=postgres;Password=postgres
+      Redis__Configuration: redis:6379
+      Redis__Enabled: "true"
       Kafka__BootstrapServers: kafka:9092
       Kafka__BookingTopic: to2rent-bookings
       Kafka__InquiryTopic: to2rent-inquiries
@@ -68,9 +87,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       kafka:
         condition: service_started
 
 volumes:
   postgres_data:
   kafka_data:
+  redis_data:

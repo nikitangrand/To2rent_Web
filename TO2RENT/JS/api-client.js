@@ -116,6 +116,13 @@ const To2RentApi = (() => {
             return request('/api/auth/users');
         },
 
+        updateUserRole(id, role) {
+            return request(`/api/auth/users/${id}/role`, {
+                method: 'PATCH',
+                body: JSON.stringify({ role })
+            });
+        },
+
         // Properties
         getProperties(filters = {}) {
             const params = new URLSearchParams();
@@ -307,6 +314,15 @@ const To2RentApi = (() => {
         // Statistics
         getStats() {
             return request('/api/stats');
+        },
+
+        // System Telemetry & Kafka Audit Log
+        getSystemStatus() {
+            return request('/api/system/status');
+        },
+
+        getAuditEvents(count = 50) {
+            return request(`/api/system/audit?count=${count}`);
         }
     };
 })();

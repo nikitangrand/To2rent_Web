@@ -3,6 +3,7 @@ using System.Text;
 using Backend.Application.Interfaces;
 using Backend.Application.Services;
 using Backend.Data;
+using Backend.Infrastructure.Caching;
 using Backend.Infrastructure.Messaging;
 using Backend.Infrastructure.Repositories;
 using Backend.Infrastructure.Security;
@@ -82,10 +83,35 @@ builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 
-// Kafka Event Messaging (Open/Closed Principle)
+// Redis Distributed Caching (L2 Cache) with In-Memory fallback
+var redisHost = builder.Configuration["Redis:Configuration"] ?? "localhost:6379";
+var redisEnabled = builder.Configuration.GetValue<bool>("Redis:Enabled", true);
+var isRedisReachable = redisEnabled && KafkaConnectivity.IsBrokerAvailable(redisHost, 800);
+
+if (isRedisReachable)
+{
+    Console.WriteLine($"[Redis] Подключен распределенный кэш Redis ({redisHost}).");
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisHost;
+        options.InstanceName = "to2rent:";
+    });
+}
+else
+{
+    Console.WriteLine("[Cache] Redis не обнаружен. Используется встроенный In-Memory распределенный кэш.");
+    builder.Services.AddDistributedMemoryCache();
+}
+builder.Services.AddSingleton<ICacheService, DistributedCacheService>();
+
+// Kafka Event Messaging & Notification Stream (Open/Closed Principle)
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+builder.Services.AddSingleton<INotificationLogService, NotificationLogService>();
 builder.Services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 builder.Services.AddHostedService<KafkaBookingAuditConsumer>();
+
+// System Health Checks
+builder.Services.AddHealthChecks();
 
 // JWT Authentication & Authorization
 builder.Services.AddAuthentication(options =>
@@ -171,6 +197,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 // Database Initialization & Seed Data
 using (var scope = app.Services.CreateScope())

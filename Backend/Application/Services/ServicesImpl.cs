@@ -11,30 +11,72 @@ namespace Backend.Application.Services;
 public class PropertyService : IPropertyService
 {
     private readonly IPropertyRepository _repository;
+    private readonly ICacheService _cache;
 
-    public PropertyService(IPropertyRepository repository)
+    public PropertyService(IPropertyRepository repository, ICacheService cache)
     {
         _repository = repository;
+        _cache = cache;
     }
 
     public async Task<IEnumerable<Property>> GetPropertiesAsync(PropertyFilterDto filter)
     {
+        if (string.IsNullOrWhiteSpace(filter.Search) &&
+            !filter.MinPrice.HasValue &&
+            !filter.MaxPrice.HasValue &&
+            !filter.MinRooms.HasValue &&
+            !filter.MaxRooms.HasValue &&
+            !filter.Floors.HasValue)
+        {
+            var cacheKey = $"props:list:type_{filter.Type ?? "all"}:city_{filter.City ?? "all"}:sort_{filter.Sort ?? "default"}";
+            var cached = await _cache.GetAsync<List<Property>>(cacheKey);
+            if (cached != null) return cached;
+
+            var result = (await _repository.GetAllAsync(filter)).ToList();
+            await _cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
+            return result;
+        }
+
         return await _repository.GetAllAsync(filter);
     }
 
     public async Task<Property?> GetPropertyByIdAsync(int id)
     {
-        return await _repository.GetByIdAsync(id);
+        var cacheKey = $"props:id:{id}";
+        var cached = await _cache.GetAsync<Property>(cacheKey);
+        if (cached != null) return cached;
+
+        var prop = await _repository.GetByIdAsync(id);
+        if (prop != null)
+        {
+            await _cache.SetAsync(cacheKey, prop, TimeSpan.FromMinutes(15));
+        }
+        return prop;
     }
 
     public async Task<IEnumerable<Property>> GetPopularPropertiesAsync()
     {
-        return await _repository.GetPopularAsync();
+        const string cacheKey = "props:popular";
+        var cached = await _cache.GetAsync<List<Property>>(cacheKey);
+        if (cached != null) return cached;
+
+        var result = (await _repository.GetPopularAsync()).ToList();
+        await _cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(10));
+        return result;
     }
 
     public async Task<Property?> GetFeaturedPropertyAsync()
     {
-        return await _repository.GetFeaturedAsync();
+        const string cacheKey = "props:featured";
+        var cached = await _cache.GetAsync<Property>(cacheKey);
+        if (cached != null) return cached;
+
+        var prop = await _repository.GetFeaturedAsync();
+        if (prop != null)
+        {
+            await _cache.SetAsync(cacheKey, prop, TimeSpan.FromMinutes(10));
+        }
+        return prop;
     }
 
     public async Task<Property> CreatePropertyAsync(CreatePropertyDto dto)
@@ -59,7 +101,10 @@ public class PropertyService : IPropertyService
             CreatedAt = DateTime.UtcNow
         };
 
-        return await _repository.AddAsync(property);
+        var created = await _repository.AddAsync(property);
+        await _cache.RemoveByPrefixAsync("props:");
+        await _cache.RemoveAsync("stats:summary");
+        return created;
     }
 
     public async Task<Property?> UpdatePropertyAsync(int id, CreatePropertyDto dto)
@@ -83,12 +128,21 @@ public class PropertyService : IPropertyService
         property.IsPopular = dto.IsPopular;
         property.IsFeatured = dto.IsFeatured;
 
-        return await _repository.UpdateAsync(property);
+        var updated = await _repository.UpdateAsync(property);
+        await _cache.RemoveByPrefixAsync("props:");
+        await _cache.RemoveAsync("stats:summary");
+        return updated;
     }
 
     public async Task<bool> DeletePropertyAsync(int id)
     {
-        return await _repository.DeleteAsync(id);
+        var result = await _repository.DeleteAsync(id);
+        if (result)
+        {
+            await _cache.RemoveByPrefixAsync("props:");
+            await _cache.RemoveAsync("stats:summary");
+        }
+        return result;
     }
 }
 
@@ -98,17 +152,20 @@ public class BookingService : IBookingService
     private readonly IPropertyRepository _propertyRepo;
     private readonly IEventPublisher _eventPublisher;
     private readonly KafkaSettings _kafkaSettings;
+    private readonly ICacheService _cache;
 
     public BookingService(
         IBookingRepository bookingRepo,
         IPropertyRepository propertyRepo,
         IEventPublisher eventPublisher,
-        IOptions<KafkaSettings> kafkaOptions)
+        IOptions<KafkaSettings> kafkaOptions,
+        ICacheService cache)
     {
         _bookingRepo = bookingRepo;
         _propertyRepo = propertyRepo;
         _eventPublisher = eventPublisher;
         _kafkaSettings = kafkaOptions.Value;
+        _cache = cache;
     }
 
     public async Task<IEnumerable<Booking>> GetBookingsAsync(string? status = null)
@@ -197,6 +254,7 @@ public class BookingService : IBookingService
             CreatedAt = created.CreatedAt
         });
 
+        await _cache.RemoveAsync("stats:summary");
         return created;
     }
 
@@ -218,12 +276,18 @@ public class BookingService : IBookingService
             ChangedAt = DateTime.UtcNow
         });
 
+        await _cache.RemoveAsync("stats:summary");
         return updated;
     }
 
     public async Task<bool> DeleteBookingAsync(int id)
     {
-        return await _bookingRepo.DeleteAsync(id);
+        var result = await _bookingRepo.DeleteAsync(id);
+        if (result)
+        {
+            await _cache.RemoveAsync("stats:summary");
+        }
+        return result;
     }
 
     public async Task<IEnumerable<Booking>> GetUserBookingsAsync(int userId, string? email = null, string? phone = null)
@@ -253,6 +317,7 @@ public class BookingService : IBookingService
             ChangedAt = DateTime.UtcNow
         });
 
+        await _cache.RemoveAsync("stats:summary");
         return updated;
     }
 
@@ -272,11 +337,13 @@ public class ReviewService : IReviewService
 {
     private readonly IReviewRepository _repository;
     private readonly IPropertyRepository _propertyRepository;
+    private readonly ICacheService _cache;
 
-    public ReviewService(IReviewRepository repository, IPropertyRepository propertyRepository)
+    public ReviewService(IReviewRepository repository, IPropertyRepository propertyRepository, ICacheService cache)
     {
         _repository = repository;
         _propertyRepository = propertyRepository;
+        _cache = cache;
     }
 
     public async Task<IEnumerable<Review>> GetReviewsAsync(bool onlyApproved = true, int? propertyId = null)
@@ -291,14 +358,21 @@ public class ReviewService : IReviewService
 
     public async Task<PropertyRatingSummaryDto> GetPropertyRatingSummaryAsync(int propertyId)
     {
+        var cacheKey = $"rating:summary:{propertyId}";
+        var cached = await _cache.GetAsync<PropertyRatingSummaryDto>(cacheKey);
+        if (cached != null) return cached;
+
         var count = await _repository.CountAsync(propertyId);
         var avg = await _repository.GetAverageRatingAsync(propertyId);
-        return new PropertyRatingSummaryDto
+        var summary = new PropertyRatingSummaryDto
         {
             PropertyId = propertyId,
             AverageRating = avg,
             ReviewsCount = count
         };
+
+        await _cache.SetAsync(cacheKey, summary, TimeSpan.FromMinutes(15));
+        return summary;
     }
 
     public async Task<Review> CreateReviewAsync(CreateReviewDto dto)
@@ -325,7 +399,13 @@ public class ReviewService : IReviewService
             IsApproved = true
         };
 
-        return await _repository.AddAsync(review);
+        var created = await _repository.AddAsync(review);
+        if (dto.PropertyId.HasValue)
+        {
+            await _cache.RemoveAsync($"rating:summary:{dto.PropertyId.Value}");
+        }
+        await _cache.RemoveAsync("stats:summary");
+        return created;
     }
 
     public async Task<Review?> ToggleApprovalAsync(int id, bool isApproved)
@@ -334,12 +414,29 @@ public class ReviewService : IReviewService
         if (review == null) return null;
 
         review.IsApproved = isApproved;
-        return await _repository.UpdateAsync(review);
+        var updated = await _repository.UpdateAsync(review);
+        if (review.PropertyId.HasValue)
+        {
+            await _cache.RemoveAsync($"rating:summary:{review.PropertyId.Value}");
+        }
+        await _cache.RemoveAsync("stats:summary");
+        return updated;
     }
 
     public async Task<bool> DeleteReviewAsync(int id)
     {
-        return await _repository.DeleteAsync(id);
+        var review = await _repository.GetByIdAsync(id);
+        var propId = review?.PropertyId;
+        var result = await _repository.DeleteAsync(id);
+        if (result)
+        {
+            if (propId.HasValue)
+            {
+                await _cache.RemoveAsync($"rating:summary:{propId.Value}");
+            }
+            await _cache.RemoveAsync("stats:summary");
+        }
+        return result;
     }
 }
 
@@ -348,15 +445,18 @@ public class InquiryService : IInquiryService
     private readonly IInquiryRepository _repository;
     private readonly IEventPublisher _eventPublisher;
     private readonly KafkaSettings _kafkaSettings;
+    private readonly ICacheService _cache;
 
     public InquiryService(
         IInquiryRepository repository,
         IEventPublisher eventPublisher,
-        IOptions<KafkaSettings> kafkaOptions)
+        IOptions<KafkaSettings> kafkaOptions,
+        ICacheService cache)
     {
         _repository = repository;
         _eventPublisher = eventPublisher;
         _kafkaSettings = kafkaOptions.Value;
+        _cache = cache;
     }
 
     public async Task<IEnumerable<Inquiry>> GetInquiriesAsync(string? status = null)
@@ -389,6 +489,7 @@ public class InquiryService : IInquiryService
             CreatedAt = created.CreatedAt
         });
 
+        await _cache.RemoveAsync("stats:summary");
         return created;
     }
 
@@ -398,12 +499,19 @@ public class InquiryService : IInquiryService
         if (inquiry == null) return null;
 
         inquiry.Status = status;
-        return await _repository.UpdateAsync(inquiry);
+        var updated = await _repository.UpdateAsync(inquiry);
+        await _cache.RemoveAsync("stats:summary");
+        return updated;
     }
 
     public async Task<bool> DeleteInquiryAsync(int id)
     {
-        return await _repository.DeleteAsync(id);
+        var result = await _repository.DeleteAsync(id);
+        if (result)
+        {
+            await _cache.RemoveAsync("stats:summary");
+        }
+        return result;
     }
 }
 
@@ -413,21 +521,28 @@ public class StatsService : IStatsService
     private readonly IBookingRepository _bookingRepo;
     private readonly IReviewRepository _reviewRepo;
     private readonly IInquiryRepository _inquiryRepo;
+    private readonly ICacheService _cache;
 
     public StatsService(
         IPropertyRepository propertyRepo,
         IBookingRepository bookingRepo,
         IReviewRepository reviewRepo,
-        IInquiryRepository inquiryRepo)
+        IInquiryRepository inquiryRepo,
+        ICacheService cache)
     {
         _propertyRepo = propertyRepo;
         _bookingRepo = bookingRepo;
         _reviewRepo = reviewRepo;
         _inquiryRepo = inquiryRepo;
+        _cache = cache;
     }
 
     public async Task<StatsDto> GetStatsAsync()
     {
+        const string cacheKey = "stats:summary";
+        var cached = await _cache.GetAsync<StatsDto>(cacheKey);
+        if (cached != null) return cached;
+
         var totalProps = await _propertyRepo.CountAsync();
         var totalAparts = await _propertyRepo.CountAsync("apartment");
         var totalHouses = await _propertyRepo.CountAsync("house");
@@ -441,7 +556,7 @@ public class StatsService : IStatsService
         var totalReviews = await _reviewRepo.CountAsync();
         var avgRating = await _reviewRepo.GetAverageRatingAsync();
 
-        return new StatsDto
+        var stats = new StatsDto
         {
             TotalProperties = totalProps,
             TotalApartments = totalAparts,
@@ -454,6 +569,9 @@ public class StatsService : IStatsService
             TotalReviews = totalReviews,
             AverageRating = avgRating
         };
+
+        await _cache.SetAsync(cacheKey, stats, TimeSpan.FromSeconds(60));
+        return stats;
     }
 }
 
@@ -567,6 +685,19 @@ public class AuthService : IAuthService
             user.PasswordHash = PasswordHasher.HashPassword(dto.NewPassword);
         }
 
+        var updated = await _userRepo.UpdateAsync(user);
+        return MapToUserDto(updated);
+    }
+
+    public async Task<UserDto> UpdateUserRoleAsync(int id, string role)
+    {
+        var user = await _userRepo.GetByIdAsync(id);
+        if (user == null)
+        {
+            throw new KeyNotFoundException($"Пользователь #{id} не найден.");
+        }
+
+        user.Role = string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) ? "Admin" : "Client";
         var updated = await _userRepo.UpdateAsync(user);
         return MapToUserDto(updated);
     }

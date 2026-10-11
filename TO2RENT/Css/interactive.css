@@ -1634,3 +1634,101 @@ textarea.input-field {
   margin: 0 4px;
   user-select: none;
 }
+
+/* ==========================================================================
+   System Telemetry Pills & Kafka Audit Log (Zero Emojis, Brutalist)
+   ========================================================================== */
+.system-status-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0 !important;
+  border: 1px solid #dcdcdc;
+  background: #f8f9fa;
+  color: #333;
+}
+
+.status-pill::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 0 !important;
+  background: #999;
+}
+
+.status-pill--ok {
+  border-color: #28a745;
+  color: #1e7e34;
+  background: #f4fbf6;
+}
+
+.status-pill--ok::before {
+  background: #28a745;
+}
+
+.status-pill--warn {
+  border-color: #e0a800;
+  color: #856404;
+  background: #fffdf5;
+}
+
+.status-pill--warn::before {
+  background: #e0a800;
+}
+
+.status-pill--neutral {
+  border-color: #999;
+  color: #444;
+  background: #f8f9fa;
+}
+
+.status-pill--neutral::before {
+  background: #666;
+}
+
+.channel-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-radius: 0 !important;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+}
+
+.channel-badge--telegram {
+  background: #0088cc;
+  border-color: #0088cc;
+  color: #fff;
+}
+
+.channel-badge--email {
+  background: #444;
+  border-color: #444;
+  color: #fff;
+}
+
+.channel-badge--kafka {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+

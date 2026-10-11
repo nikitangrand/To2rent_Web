@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using System.Text.Json;
 using Backend.Application.Interfaces;
+using Backend.Domain.DTOs;
 using Backend.Domain.Events;
 using Confluent.Kafka;
 using Microsoft.Extensions.Hosting;
@@ -48,13 +49,18 @@ public class KafkaEventPublisher : IEventPublisher
 {
     private readonly KafkaSettings _settings;
     private readonly ILogger<KafkaEventPublisher> _logger;
+    private readonly INotificationLogService _notificationLog;
     private readonly Lazy<IProducer<string, string>?> _producer;
     private readonly bool _isKafkaReachable;
 
-    public KafkaEventPublisher(IOptions<KafkaSettings> settings, ILogger<KafkaEventPublisher> logger)
+    public KafkaEventPublisher(
+        IOptions<KafkaSettings> settings, 
+        ILogger<KafkaEventPublisher> logger,
+        INotificationLogService notificationLog)
     {
         _settings = settings.Value;
         _logger = logger;
+        _notificationLog = notificationLog;
 
         _isKafkaReachable = _settings.Enabled && KafkaConnectivity.IsBrokerAvailable(_settings.BootstrapServers, 800);
         _producer = new Lazy<IProducer<string, string>?>(CreateProducer);
@@ -95,6 +101,56 @@ public class KafkaEventPublisher : IEventPublisher
     {
         var json = JsonSerializer.Serialize(message);
         _logger.LogInformation("[Событие] Тема '{Topic}' (Ключ={Key}): {Payload}", topic, key, json);
+
+        // Register notification record in audit log
+        if (message is BookingCreatedEvent bce)
+        {
+            _notificationLog.Add(new NotificationRecord
+            {
+                Topic = topic,
+                EventType = "Новое бронирование",
+                Recipient = $"{bce.ClientName} ({bce.ClientPhone})",
+                Channel = "Telegram Bot (@To2RentBot) & Email",
+                Message = $"Заявка #{bce.BookingId} на «{bce.PropertyTitle}». Даты: {bce.CheckInDate:dd.MM.yyyy} — {bce.CheckOutDate:dd.MM.yyyy}. Сумма: {bce.TotalPrice} $. Оповещение передано клиенту и в канал менеджеров.",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        else if (message is BookingStatusChangedEvent bsce)
+        {
+            _notificationLog.Add(new NotificationRecord
+            {
+                Topic = topic,
+                EventType = "Смена статуса брони",
+                Recipient = $"Клиент заявки #{bsce.BookingId}",
+                Channel = "Email & Push",
+                Message = $"Заявка #{bsce.BookingId}: статус изменен с «{bsce.OldStatus}» на «{bsce.NewStatus}». Отправлено push-уведомление клиенту.",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        else if (message is InquiryCreatedEvent ice)
+        {
+            _notificationLog.Add(new NotificationRecord
+            {
+                Topic = topic,
+                EventType = "Запрос клиента",
+                Recipient = $"Менеджер ({ice.TargetManager})",
+                Channel = "Telegram Bot (@To2RentBot)",
+                Message = $"От {ice.Name} ({ice.ContactInfo}): «{ice.Message}»",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        else
+        {
+            _notificationLog.Add(new NotificationRecord
+            {
+                Topic = topic,
+                EventType = typeof(T).Name,
+                Recipient = key,
+                Channel = "Kafka Event Stream",
+                Message = json,
+                Timestamp = DateTime.UtcNow
+            });
+        }
 
         var producer = _producer.Value;
         if (producer == null) return;
