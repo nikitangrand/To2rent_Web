@@ -75,18 +75,39 @@ public static class DbInitializer
 
         if (context.Properties.Any())
         {
+            // Migrate existing properties if they have legacy purchase prices (> $10,000)
+            var legacyProps = context.Properties.Where(p => p.Price > 10000).ToList();
+            if (legacyProps.Any())
+            {
+                foreach (var p in legacyProps)
+                {
+                    p.Price = p.Title switch
+                    {
+                        var t when t.Contains("Лос Анджелес") && t.Contains("Коттедж") => 750,
+                        var t when t.Contains("Лондон") && t.Contains("Коттедж") => 600,
+                        var t when t.Contains("Москва") && t.Contains("Коттедж") => 250,
+                        var t when t.Contains("Минск") && t.Contains("Коттедж") => 180,
+                        var t when t.Contains("Лос Анджелес") => 450,
+                        var t when t.Contains("Лондон") => 500,
+                        var t when t.Contains("Москва") => 65,
+                        var t when t.Contains("Минск") => 45,
+                        _ => 150
+                    };
+                }
+                context.SaveChanges();
+            }
             return; // DB has been seeded
         }
 
         var properties = new List<Property>
         {
-            // Apartments
+            // Apartments (Посуточная аренда в $)
             new Property
             {
                 Title = "Апартаменты Лос Анджелес",
                 Type = "apartment",
                 City = "Лос Анджелес",
-                Price = 1200000,
+                Price = 450,
                 Currency = "$",
                 Description = "Современная квартира с новым ремонтом",
                 FullDescription = "Просторные премиум-апартаменты в престижном районе Лос-Анджелеса с дизайнерской отделкой, панорамными окнами и современной системой кондиционирования.",
@@ -103,7 +124,7 @@ public static class DbInitializer
                 Title = "Апартаменты Лондон",
                 Type = "apartment",
                 City = "Лондон",
-                Price = 1500000,
+                Price = 500,
                 Currency = "$",
                 Description = "Просторная квартира в центре Лондона",
                 FullDescription = "Элитное жилье в историческом центре британской столицы с высокими потолками, камином и потрясающим видом на городские парки.",
@@ -120,7 +141,7 @@ public static class DbInitializer
                 Title = "Апартаменты Москва",
                 Type = "apartment",
                 City = "Москва",
-                Price = 110000,
+                Price = 65,
                 Currency = "$",
                 Description = "Стандартная квартира в Бибирево",
                 FullDescription = "Уютная однокомнатная квартира со свежим косметическим ремонтом, полностью меблированная, в 7 минутах пешком от станции метро.",
@@ -137,7 +158,7 @@ public static class DbInitializer
                 Title = "Апартаменты Минск",
                 Type = "apartment",
                 City = "Минск",
-                Price = 95000,
+                Price = 45,
                 Currency = "$",
                 Description = "Комфортная квартира на Уручье",
                 FullDescription = "Светлая двухкомнатная квартира в тихом зеленом районе столицы. Рядом парк, удобная транспортная развязка, развитая инфраструктура.",
@@ -150,13 +171,13 @@ public static class DbInitializer
                 CreatedAt = DateTime.UtcNow.AddDays(-15)
             },
 
-            // Houses
+            // Houses (Посуточная аренда в $)
             new Property
             {
                 Title = "Коттедж Modern Лос Анджелес",
                 Type = "house",
                 City = "Лос Анджелес",
-                Price = 820000,
+                Price = 750,
                 Currency = "$",
                 Description = "Современный дом передовых технологий",
                 FullDescription = "Инновационный коттедж с системой 'умный дом', собственным бассейном, просторной террасой и дизайнерским ландшафтным оформлением участка.",
@@ -175,7 +196,7 @@ public static class DbInitializer
                 Title = "Коттедж Семейный Лондон",
                 Type = "house",
                 City = "Лондон",
-                Price = 470000,
+                Price = 600,
                 Currency = "$",
                 Description = "Классический дом с минималистичным дизайном",
                 FullDescription = "Традиционный британский особняк в викторианском стиле с уютным садом, просторной гостиной и приватной зоной отдыха для большой семьи.",
@@ -194,7 +215,7 @@ public static class DbInitializer
                 Title = "Коттедж Стандарт Москва",
                 Type = "house",
                 City = "Москва",
-                Price = 380000,
+                Price = 250,
                 Currency = "$",
                 Description = "Стандартный дом в строгом стиле",
                 FullDescription = "Двухэтажный загородный дом в охраняемом поселке. Чистый воздух, лесная территория, гараж на 2 автомобиля и современная инженерия.",
@@ -213,7 +234,7 @@ public static class DbInitializer
                 Title = "Коттедж Элитный Минск",
                 Type = "house",
                 City = "Минск",
-                Price = 210000,
+                Price = 180,
                 Currency = "$",
                 Description = "Просторный дом с зимним садом",
                 FullDescription = "Респектабельный коттедж с панорамным остеклением, зимним садом, каминным залом и баней в престижном пригородном поселке.",
@@ -284,7 +305,7 @@ public static class DbInitializer
                 CheckInDate = DateTime.UtcNow.AddDays(5),
                 CheckOutDate = DateTime.UtcNow.AddDays(15),
                 GuestsCount = 4,
-                TotalPrice = 8200,
+                TotalPrice = 7500, // 10 ночей по 750 $
                 Notes = "Нужен трансфер из аэропорта и детская кроватка",
                 Status = "Confirmed",
                 CreatedAt = DateTime.UtcNow.AddDays(-2)
@@ -299,7 +320,7 @@ public static class DbInitializer
                 CheckInDate = DateTime.UtcNow.AddDays(3),
                 CheckOutDate = DateTime.UtcNow.AddDays(8),
                 GuestsCount = 2,
-                TotalPrice = 1500,
+                TotalPrice = 325, // 5 ночей по 65 $
                 Notes = "Поздний заезд после 21:00",
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow.AddHours(-10)

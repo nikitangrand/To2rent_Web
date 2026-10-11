@@ -168,7 +168,7 @@ function renderApartmentsList(items, container, countEl) {
             <div class="card-content">
                 <img src="${imgPath}" alt="${escapeHtml(item.title)}" class="card-image" loading="lazy">
                 <div class="card-info">
-                    <h3 class="price">${formatNumber(item.price)} ${item.currency || '$'}</h3>
+                    <h3 class="price">${formatNumber(item.price)} ${item.currency || '$'} <span style="font-size: 14px; font-weight: normal; color: #777;">/ сутки</span></h3>
                     <p class="description">${escapeHtml(item.description)}</p>
                     <p>Комнат: ${item.rooms}</p>
                     <p>Площадь: ${item.area} м²</p>

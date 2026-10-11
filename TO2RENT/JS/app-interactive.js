@@ -400,7 +400,7 @@ function openBookingModal(property = {}) {
     if (property && property.title) {
         preview.style.display = 'flex';
         titleEl.textContent = property.title;
-        priceEl.textContent = `${formatNumber(property.price || 0)} ${property.currency || '$'}`;
+        priceEl.textContent = `${formatNumber(property.price || 0)} ${property.currency || '$'} / сутки`;
         imgEl.src = property.image || '../Images/Terr1.jpg';
     } else {
         preview.style.display = 'none';
@@ -453,12 +453,16 @@ function updateBookingPriceCalculation() {
 
     daysEl.textContent = `За ${days} ${getDaysPlural(days)}`;
 
-    let baseRate = 350;
+    let dailyRate = 150;
     if (currentBookingProperty && currentBookingProperty.price) {
-        baseRate = Math.max(150, Math.round(currentBookingProperty.price / 30));
+        if (currentBookingProperty.price > 5000) {
+            dailyRate = Math.round(currentBookingProperty.price / 30);
+        } else {
+            dailyRate = currentBookingProperty.price;
+        }
     }
 
-    const total = baseRate * days;
+    const total = dailyRate * days;
     totalEl.textContent = `${formatNumber(total)} $`;
 }
 
